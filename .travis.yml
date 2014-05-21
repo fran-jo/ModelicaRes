@@ -14,12 +14,13 @@ virtualenv:
 
 # We'll install as many packages as possible via pip, but some require apt-get.
 before_install:
+  - export DISPLAY=:99.0
+  - sh -e /etc/init.d/xvfb start
   - sudo apt-get update -qq
-  - sudo pip install numpy
-  - sudo apt-get install python-scipy
-  - sudo pip install matplotlib pandas control
+  - sudo apt-get -q install python-scipy
   - sudo apt-get -q install python-pyside python-qt4
 #  - sudo apt-get -q libwxgtk2.8-0 python-wxtools
+  - pip install numpy matplotlib pandas control
 
 install:
   - python setup.py build && sudo python setup.py install

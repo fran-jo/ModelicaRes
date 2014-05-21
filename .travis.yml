@@ -20,7 +20,7 @@ before_install:
   - sudo apt-get -q install python-scipy
   - sudo apt-get -q install python-pyside python-qt4
 #  - sudo apt-get -q libwxgtk2.8-0 python-wxtools
-  - pip install numpy matplotlib pandas control
+  - sudo pip install numpy matplotlib pandas control
 
 install:
   - python setup.py build && sudo python setup.py install

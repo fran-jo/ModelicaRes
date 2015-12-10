@@ -1,23 +1,35 @@
-# Images
-#*.png
-#*.pdf
-
 # Compiled files
 *.pyc
 build/
 
 # Generated files
 dist/
-examples/*/*/*
-examples/*.pdf
-examples/*.png
-examples/ChuaCircuit-voltages.csv
-doc/_images/math/*
+/examples/*/*/*
+/tests/*.pdf
 MANIFEST
-ModelicaRes.egg-info
-.fuse*
-examples/*.mpg
 *.mos
+doc/examples
+*.egg-info
+*.tsv
+
+# Dymola-generated files
+buildlog.txt
+dsmodel.c
+dslog.txt
+failure
+request
+status
+success
+Model_internal.mat
 
 # Backup files
 .ipynb_checkpoints
+
+# Link to matplotlibrc
+matplotlibrc
+
+# Other .gitignore files (this one already included)
+.gitignore
+
+# IDE
+.idea/*

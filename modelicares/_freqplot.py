@@ -1,30 +1,34 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 """Bode and Nyquist plots for control systems
 """
 # Kevin Davies 5/14/14:
 # This file has been modified from version 0.6d of control.freqplot (license
 # below):
 # 1.  Added label and axes arguments to bode_plot()
-# 2.  Added label, mark, show_axes, textFreq and ax arguments to nyquist_plot()
+# 2.  Added label, mark, show_axes, label_freq, in_Hz, and ax arguments to
+#     nyquist_plot()
 # 3.  Updated the docstrings
-# 4.  The default_frequency_range function is imported from the freqplot
-#     submodule of the installed control package.
-# 5.  The get_pow1000 and si_prefix functions, which I contributed to the
-#     control package, have been imported from modelicares.util rather than
-#     defined here.
-# 6.  Eliminated the scipy import; using functions from numpy instead
-# 7.  Labeled frequencies are shown with a dot in the Bode plot.
-# 8.  bode_plot() also returns the axes.
-# 9.  No longer using a configuration file to establish the defaults in
+# 4.  Using quantity_str() instead of the get_pow1000 and si_prefix functions.
+# 5.  Eliminated the scipy import; using functions from numpy instead
+# 6.  Labeled frequencies are shown with a dot in the Bode plot
+# 7.  bode_plot() and nyquist_plot() only return the axes.
+# 8.  No longer using a configuration file to establish the defaults in
 #     bode_plot()
-# 10. Removed the Plot argument to bode_plot() and nyquist_plot_plot(); assuming
+# 9.  Removed the Plot argument to bode_plot() and nyquist_plot_plot(); assuming
 #     it is always True
-# 11. Both plotting functions now only accept a single system (sys instead of
+# 10. Both plotting functions now only accept a single system (sys instead of
 #     syslist).
-# 12. Using modelicares.texunit.number_label to label the axes
-# 13. Removed color as argument to nyquist_plot(); deferring to *args and
+# 11. Using natu.util.number_label to label the axes
+# 12. Removed color as argument to nyquist_plot(); deferring to *args and
 #     **kwargs
+# 13. Renamed the omega argument to freqs in bode_plot() and nyquist_plot().
+#     The frequencies may now be specified in Hz or rad/s.
+# 14. Renamed the dB, Hz, and deg arguments to bode_plot to in_dB, in_Hz, and
+#     in_deg.
+# 15. The default frequency range goes two orders of magnitude beyond the
+#     widest features (previously, one order of magnitude).
+# 16. The default frequency range rounds to decades of Hz or rad/s, depending on
+#     the unit used to plot frequency.
 
 # Author: Richard M. Murray
 # Date: 24 May 09
@@ -61,52 +65,190 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+# Standard pylint settings for this project:
+# pylint: disable=I0011, C0302, C0325, R0903, R0904, R0912, R0913, R0914, R0915
+# pylint: disable=I0011, W0141, W0142
+
+# Other:
+# pylint: disable=I0011, C0103, E1101
+
 import numpy as np
 import matplotlib.pyplot as plt
 
+from functools import wraps
 from control.ctrlutil import unwrap
-from control.freqplot import default_frequency_range
 
-from modelicares.util import get_pow1000, si_prefix, add_hlines, add_vlines
-from modelicares.texunit import number_label
+from .texunit import quantity_str, number_label
+from .util import add_hlines, add_vlines
+
+# Units
+rad = 1
+s = 1
+cyc = 2 * np.pi * rad
+deg = cyc / 360
+Hz = cyc / s
+to_dB = lambda x: 20 * np.log10(x)
 
 
-def bode_plot(sys, omega=None, dB=False, Hz=False, deg=True, label=None,
+def default_frequency_range(syslist, in_Hz=True):
+    """Examine the poles and zeros of systems and return a reasonable frequency
+    range for frequency domain plots.
+
+    This function looks at the poles and zeros of all of the systems and sets
+    the frequency range to be one decade above and below the min and max feature
+    frequencies, rounded to the nearest integer.  It excludes poles and zeros at
+    the origin.  If no features are found, it turns logspace(-1, 1).
+
+    **Parameters:**
+
+    - *syslist*: List of linear input/output systems (single system is OK)
+
+    - *in_Hz*: If `True`, the frequencies (*freqs*) are rounded to decades of
+      Hz (otherwise, rad/s)
+
+    **Returns:**
+
+    1. Range of frequencies (array)
+
+    **Example:**
+
+    >>> from control.matlab import ss
+
+    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> default_frequency_range(sys) # doctest: +ELLIPSIS
+    array([  6.28318531e-03,   7.04984987e-03,   7.91006165e-03,
+             ...
+             6.28318531e+03])
+    """
+    # Find the list of all poles and zeros in the systems.
+    features = []
+
+    # Put the single system in a list if necessary.
+    if not getattr(syslist, '__iter__', False):
+        syslist = [syslist, ]
+
+    for sys in syslist:
+        try:
+            # Add new features to the list.
+            features = np.concatenate((features, np.abs(sys.pole()) * rad / s))
+            features = np.concatenate((features, np.abs(sys.zero()) * rad / s))
+        except:
+            pass
+
+    # Get rid of poles and zeros at the origin.
+    features = features[features != 0]
+
+    # Make sure there is at least one point in the range.
+    if features.shape[0] == 0:
+        features = [1]
+
+    # Take the log of the features.
+    features = np.log10(features)
+
+    # TODO: Add a check in the discrete case to avoid aliasing.
+
+    # Set the range to be two orders of magnitude beyond any features.
+    unit = Hz if in_Hz else rad / s
+    e0 = np.floor(np.min(features) / unit) - 2
+    e1 = np.ceil(np.max(features) / unit) + 2
+    return np.logspace(e0, e1, (e1 - e0) * 20 + 1) * unit
+    # 20 matches the default skip in nyquist_plot().
+
+
+def require_SISO(func):
+    """Decorate a function to require that the first argument is a SISO system.
+    """
+    @wraps(func)
+    def wrapped(sys, *args, **kwargs):
+        """Function that requires that the system is SISO
+        """
+        if sys.inputs > 1 or sys.outputs > 1:
+            raise NotImplementedError("This function is currently only "
+                                      "implemented for SISO systems.")
+        return func(sys, *args, **kwargs)
+
+    return wrapped
+
+
+def overload_freqs(func):
+    """Decorate a function to accept frequencies via (min, max) or default
+    ('None'), as well as a list of frequencies.
+    """
+    @wraps(func)
+    def wrapped(sys, freqs=None, in_Hz=True, *args, **kwargs):
+        """Updated function
+        """
+        if freqs is None:
+            f = default_frequency_range(sys, in_Hz)
+            # TODO: Do something smarter for discrete.
+        elif isinstance(freqs, tuple):
+            # Interpolate between the minimum and maximum frequencies.
+            assert len(freqs) == 2, ("The freqs tuple must be a pair with the "
+                                     "minimum and maximum frequencies.")
+            e = np.log10(freqs)
+            f = np.logspace(e[0], e[1], np.diff(e) * 20 + 1) * (Hz if in_Hz else
+                                                                rad / s)
+            # 20 matches the default skip in nyquist_plot().
+        else:
+            f = freqs * (Hz if in_Hz else rad / s)
+
+        return func(sys, f, in_Hz, *args, **kwargs)
+
+    return wrapped
+
+
+def via_system(func):
+    """Decorate a function to accept magnitude and phase via a system.
+    """
+    @wraps(func)
+    def wrapped(sys, f, *args, **kwargs):
+        """Updated function
+        """
+        mag, phase = sys.freqresp(f / (rad / s))[0:2]
+        mag = np.squeeze(mag)
+        phase = np.squeeze(phase) * rad
+
+        return func(mag, phase, f, *args, **kwargs)
+
+    return wrapped
+
+
+@require_SISO  # TODO: Support MIMO.
+@overload_freqs
+@via_system
+def bode_plot(mag, phase, f, in_Hz=True, in_dB=True, in_deg=True, label=None,
               axes=None, *args, **kwargs):
-    """Create a Bode plot for a system.
+    r"""Create a Bode plot for a system.
 
-    **Arguments:**
+    **Parameters:**
 
     - *sys*: Linear input/output system (Lti)
 
-    - *omega*: Range of frequencies (list or bounds) in rad/s (freq_range)
+    - *freqs*: List or frequencies or tuple of (min, max) frequencies over which
+      to plot the system response.
 
-    - *dB*: If *True*, plot the magnitude in dB
+         If *freqs* is 'None', then an appropriate range will be determined
+         automatically.
 
-    - *Hz*: If *True*, plot the frequency in Hz
+    - *in_Hz*: If `True`, the frequencies (*freqs*) are in Hz and should be
+      plotted in Hz (otherwise, rad/s)
 
-         Regardless, *omega* must be provided in rad/s.
+    - *in_dB*: If `True`, plot the magnitude in dB
 
-    - *deg*: If *True*, plot the phase in degrees (else radians)
+    - *in_deg*: If `True`, plot the phase in degrees (otherwise, radians)
 
     - *label*: Label for the legend, if added
 
     - *axes*: Tuple (pair) of axes to plot into
 
-         If *None* or (*None*, None*), then axes are created
+         If 'None' or ('None', None*), then axes are created
 
     - *\*args*, *\*\*kwargs*: Additional options to matplotlib (color,
       linestyle, etc.)
 
     **Returns:**
 
-    1. magnitude (array)
-
-    2. phase (array)
-
-    3. omega (array)
-
-    4. axes  for the magnitude and phase plots (tuple (pair) of matplotlib axes)
+    1. Axes of the magnitude and phase plots (tuple (pair) of matplotlib axes)
 
     **Example:**
 
@@ -116,81 +258,72 @@ def bode_plot(sys, omega=None, dB=False, Hz=False, deg=True, label=None,
        >>> from control.matlab import ss
 
        >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-       >>> mag, phase, omega, axes = bode_plot(sys)
+       >>> axes = bode_plot(sys)
     """
-
-    if omega is None:
-        omega = default_frequency_range(sys)
-
-    if sys.inputs > 1 or sys.outputs > 1:
-        raise NotImplementedError(
-                "This function is currently only implemented for SISO systems.")
-        # TODO: Support MIMO.
-
-    # Get the magnitude and phase of the system.
-    mag_tmp, phase_tmp, omega = sys.freqresp(omega)
-    mag = np.atleast_1d(np.squeeze(mag_tmp))
-    phase = np.atleast_1d(np.squeeze(phase_tmp))
     phase = unwrap(phase)
-    if Hz:
-        omega = omega/(2*np.pi)
-    if dB:
-        mag = 20*np.log10(mag)
-    if deg:
-        phase = phase * 180 / np.pi
+    freq_unit = Hz if in_Hz else rad / s
 
     # Create axes if necessary.
     if axes is None or (None, None):
         axes = (plt.subplot(211), plt.subplot(212))
 
     # Magnitude plot
-    if dB:
-        axes[0].semilogx(omega, mag, label=label, *args, **kwargs)
-    else:
-        axes[0].loglog(omega, mag, label=label, *args, **kwargs)
+    axes[0].semilogx(f / freq_unit, to_dB(mag) if in_dB else mag,
+                     label=label, *args, **kwargs)
 
     # Add a grid and labels.
     axes[0].grid(True)
     axes[0].grid(True, which='minor')
-    axes[0].set_ylabel("Magnitude in dB" if dB else "Magnitude")
+    axes[0].set_ylabel("Magnitude in dB" if in_dB else "Magnitude")
 
     # Phase plot
-    axes[1].semilogx(omega, phase, label=label, *args, **kwargs)
+    axes[1].semilogx(f / freq_unit, phase / (deg if in_deg else rad),
+                     label=label, *args, **kwargs)
 
     # Add a grid and labels.
     axes[1].grid(True)
     axes[1].grid(True, which='minor')
-    axes[1].set_xlabel(number_label("Frequency" , "Hz" if Hz else "rad/s"))
-    axes[1].set_ylabel("Phase / deg" if deg else "Phase / rad")
+    axes[1].set_xlabel(number_label("Frequency", "Hz" if in_Hz else "rad/s"))
+    axes[1].set_ylabel(number_label("Phase", "deg" if in_deg else "rad"))
 
-    return mag, phase, omega, axes
+    return axes
 
 
-def nyquist_plot(sys, omega=None, label=None, mark=False, show_axes=True,
-                 labelFreq=0, textFreq=True, ax=None, *args, **kwargs):
-    """Create a Nyquist plot for a system.
+@require_SISO  # TODO: Support MIMO.
+@overload_freqs
+@via_system
+def nyquist_plot(mag, phase, f, in_Hz=True, label=None, mark=False,
+                 show_axes=True, skip=20, label_freq=True, ax=None, *args,
+                 **kwargs):
+    r"""Create a Nyquist plot for a system.
 
-    **Arguments:**
+    **Parameters:**
 
     - *sys*: Linear input/output system (Lti)
 
-    - *omega*: Range of frequencies (list or bounds) in rad/s (freq_range)
+    - *freqs*: List or frequencies or tuple of (min, max) frequencies over which
+      to plot the system response.
+
+         If *freqs* is 'None', then an appropriate range will be determined
+         automatically.
+
+    - *in_Hz*: `True`, if the frequencies (*freqs*) are in Hz (otherwise, rad/s)
 
     - *label*: Label for the legend, if added
 
-    - *mark*: *True*, if the -1 point should be marked on the plot
+    - *mark*: `True`, if the -1 point should be marked on the plot
 
-    - *show_axes*: *True*, if the axes should be shown
+    - *show_axes*: `True`, if the axes should be shown
 
-    - *labelFreq*: Label every nth frequency on the plot (int)
+    - *skip*: Mark every nth frequency on the plot with a dot (int)
 
-    - *textFreq*: If *True*, if the frequency labels should include text
+         If *skip* is 0 or 'None', then the frequencies are not marked.
 
-         Otherwise, just dots are used.
+    - *label_freq*: If `True`, if the marked frequencies should be labeled
 
     - *ax*: Axes to plot into
 
-         If *None*, then axes are created.
+         If 'None', then axes are created.
 
     - *\*args*, *\*\*kwargs*: Additional options to matplotlib (color, etc.)
 
@@ -198,13 +331,7 @@ def nyquist_plot(sys, omega=None, label=None, mark=False, show_axes=True,
 
     **Returns:**
 
-    1. Real part of the frequency response (array)
-
-    2. Imaginary part of the frequency response (array)
-
-    2. Frequencies (array)
-
-    3. Axes of the Nyquist plot (matplotlib axes)
+    1. Axes of the Nyquist plot (matplotlib axes)
 
     **Example:**
 
@@ -214,29 +341,8 @@ def nyquist_plot(sys, omega=None, label=None, mark=False, show_axes=True,
        >>> from control.matlab import ss
 
        >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-       >>> x, y, omega, ax = nyquist_plot(sys)
+       >>> ax = nyquist_plot(sys)
     """
-    if sys.inputs > 1 or sys.outputs > 1:
-        raise NotImplementedError(
-                "This function is currently only implemented for SISO systems.")
-        # TODO: Support MIMO.
-
-    if omega is None:
-        omega = default_frequency_range(sys)
-        # TODO: Do something smarter for discrete.
-    elif isinstance(omega, list) or isinstance(omega, tuple):
-        # Interpolate between wmin and wmax.
-        try:
-            omega = np.logspace(np.log10(omega[0]), np.log10(omega[1]), num=50,
-                                endpoint=True, base=10)
-        except IndexError:
-            raise ValueError("Supported frequency arguments are (wmin, wmax) "
-                             "tuple or list, or frequency vector.")
-
-    # Get the magnitude and phase of the system.
-    mag_tmp, phase_tmp, omega = sys.freqresp(omega)
-    mag = np.squeeze(mag_tmp)
-    phase = np.squeeze(phase_tmp)
 
     # Compute the primary curve.
     x = np.multiply(mag, np.cos(phase))
@@ -248,40 +354,34 @@ def nyquist_plot(sys, omega=None, label=None, mark=False, show_axes=True,
         ax = fig.add_subplot(111, aspect='equal')
 
     # Plot the primary curve and mirror image.
-    kwargs.pop('linestyle', None) # Ignore this.
+    kwargs.pop('linestyle', None)  # Ignore the linestyle argument.
     ax.plot(x, y, linestyle='-', label=label, *args, **kwargs)
     ax.plot(x, -y, linestyle='--', *args, **kwargs)
-
-    # Mark the -1 point.
-    if mark:
-        ax.plot([-1], [0], 'r+')
 
     # Show the axes.
     if show_axes:
         add_hlines(ax, color='k', linestyle='--', linewidth=0.5)
         add_vlines(ax, color='k', linestyle='--', linewidth=0.5)
 
-    # Label the frequencies.
-    if labelFreq:
-        for xpt, ypt, omegapt in zip(x[::labelFreq], y[::labelFreq], omega[::labelFreq]):
-            # Convert to Hz.
-            f = omegapt/(2*np.pi)
+    # Mark the -1 point.
+    if mark:
+        ax.plot([-1], [0], 'r+')
 
-            # Get the SI prefix.
-            pow1000 = max(min(get_pow1000(f), 8), -8)
-            prefix = si_prefix(pow1000)
-
-            # Apply the text.
-            # Use a space before the text to prevent overlap with the data.
-            if textFreq:
-                ax.text(xpt, ypt,
-                        ' ' + str(int(np.round(f/1000**pow1000, 0))) +
-                        ' ' + prefix + 'Hz')
-                # np.round() is used because 0.99... appears instead of 1.0, and
-                # this would otherwise be truncated to 0.
-
-            # Show the freqencies with a dot.
+    # Mark and label the frequencies.
+    if skip:
+        for xpt, ypt, fpt in zip(x[::skip], y[::skip], f[::skip]):
+            # Mark the freqencies with a dot.
             color = kwargs.pop('color', 'b')
             ax.plot(xpt, ypt, '.', color=color)
 
-    return x, y, omega, ax
+            # Apply the text.
+            if label_freq:
+                # Use a space before the text to prevent overlap with the data.
+                ax.text(xpt, ypt, ' ' + quantity_str(fpt / Hz, 'Hz', '%.0e',
+                                                     roman=False))
+
+    # Set the x and y limits the same.
+    # lim = np.max(np.abs(ax.axis()))
+    # ax.axis([-lim, lim, -lim, lim])
+
+    return ax

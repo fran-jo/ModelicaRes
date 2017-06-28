@@ -1,12 +1,22 @@
 #!/usr/bin/python
+"""Example of LinResList.bode()
+"""
 
-import numpy as np
-from os.path import join, dirname
+# pylint: disable=I0011, C0103, R0801
+
+from os.path import join
 from modelicares import LinResList, read_params
 
-lins = LinResList('PID/*/*.mat')
-labels = ["Ti=%g" % read_params('Ti', join(dirname(lin.fname), 'dsin.txt'))
-          for lin in lins]
-lins.bode(title="Bode plot of Modelica.Blocks.Continuous.PID",
-          omega=2*np.pi*np.logspace(-2, 3), labels=labels,
-          leg_kwargs=dict(loc='lower right'))
+lins = LinResList('PID.mat', 'PID/*/')
+
+# Parameter settings aren't recorded in the files, so we'll load the
+# differential time constants from the corresponding dsin.txt files.
+for lin in lins:
+    lin.label = "Td = %g s" % read_params('Td', join(lin.dirname, 'dsin.txt'))
+
+# and sort the results by that information:
+lins.sort(key=lambda lin: lin.label)
+
+# and finally plot:
+lins.bode(title=("Bode plot of Modelica.Blocks.Continuous.PID\n"
+                 "with varying differential time constant"))

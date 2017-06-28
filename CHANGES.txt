@@ -1,19 +1,106 @@
 Change log
 ==========
 
-The releases are numbered according to the `Semantic Versioning Specification
-<http://semver.org>`_.
+The releases are numbered according to the `Semantic Versioning Specification`_.
+
+TBD (in `GitHub <https://github.com/kdavies4/ModelicaRes>`_ only) -- Updates:
+
+   - Removed :attr:`nametree` from :class:~modelicares.simres.SimRes` and
+     :class:~modelicares.simres.SimResList` since it probably is not very useful
+     on its own.  To get the same result as ``sim.nametree`` in the previous
+     release, do this:
+
+     .. code-block:: python
+
+        >>> from collections import OrderedDict
+        >>> from modelicares.util import tree
+
+        >>> name = sim.names
+        >>> tree(names, names, container=OrderedDict) # doctest: +SKIP
+
+   - Renamed first parameter of :func:`~modelicares.util.tree` from *strings* to
+     *keys*.  Inserted *values* as the second parameter.  To get the original
+     functionality of ``tree(keys)``, use ``tree(keys, keys)``.
+   - '/' may now be used as a path separator in Windows (and Unix/Linux).
+   - Removed :func:`~modelicares.util.delayed_exit`,
+     :func:`~modelicares.util.flatten_list`,
+     :func:`~modelicares.util.multiglob`, :func:`~modelicares.util.replace`, and
+     :func:`~modelicares.util.yes` from :mod:`modelicares.util`.  Those
+     functions are available from natu_ instead.
+   - Renamed :meth:`~modelicares.simres.SimResList.unique_IVs` to
+     :meth:`~modelicares.simres.SimResList.get_unique_IVs` to indicate that it
+     is a method.
+   - The variable tree in :class:`~modelicares.simres.SimRes.browse` is now
+     sorted alphabetically.
+   - In :class:`~modelicares.simres.SimRes`,
+     :attr:`~modelicares.simres.SimRes.names` and
+     :attr:`~modelicares.simres.SimRes.nametree` are now properties.  Use
+     :meth:`~modelicares.simres.SimRes.find` to find variables.  The
+     :attr:`~modelicares.simres.SimRes.names`,
+     :attr:`~modelicares.simres.SimRes.nametree`, and the results of
+     :meth:`~modelicares.simres.SimRes.find` are now sorted.  The same applies
+     in :class:`~modelicares.simres.SimResList`.
+
+v0.12.2_ (2014-6-10) -- Updates:
+
+   - Improved installation script and documentation
+
+v0.12.1_ (2014-6-10) -- Updates:
+
+   - Updated documentation
+   - General cleanup of code and development scripts
+   - Re-enabled setup_requires to automatically install requirements
+
+v0.12.0_ (2014-6-5) -- Updates:
+
+   - Fixed issues with Unicode_ in Python 3.
+   - Fixed sorting and ordering of :class:`~modelicares.simres.SimRes` and
+     :class:`~modelicares.linres.LinRes` instances in Python 3.
+   - :meth:`~modelicares.simres._VarList.arrays` is now available as
+     :meth:`~modelicares.simres.Variable.array` instead.
+   - *fbase* is now a property instead of a method of
+     :class:`~modelicares.simres.SimRes` and
+     :class:`~modelicares.linres.LinRes`.  Likewise, *n_constants* is now a
+     property of :class:`~modelicares.simres.SimRes` and *basedir* is a property
+     of :class:`~modelicares.simres.SimResList` and
+     :class:`~modelicares.linres.LinResList`.
+   - Added *dirname* as a property to :class:`~modelicares.simres.SimRes` and
+     :class:`~modelicares.linres.LinRes`.
+   - *basename*, *dirname*, *fname*, *n_constants*, *sys*, and *tool* are now
+     properties of :class:`~modelicares.simres.SimResList` and
+     :class:`~modelicares.linres.LinResList` (as applicable) which give lists of
+     the corresponding properties across all of the simulations or
+     linearizations in those lists.
+   - Deleted :meth:`~modelicares.simres.SimResList.fnames`.  Use the *fname*
+     property of :class:`~modelicares.simres.SimResList` instead.
+   - :meth:`~modelicares.simres.Variable.is_constant` is now a property instead
+     of a method of :class:`~modelicares.simres.Variable`.
+   - :func:`sort` now correctly sorts :class:`~modelicares.simres.SimResList`
+     and :class:`~modelicares.linres.LinResList` by absolute file path.
+   - Improved the generation of defaults for the Bode and Nyquist plots.
+   - Fixed an issue with slicing a :class:`~modelicares.simres.SimResList`.
+   - Removed :func:`~modelicares.util.pow10`.  It is not used internally and
+     probably is not very helpful externally.
+   - Change the default value of *roman* in
+     :func:`~modelicares.texunit.quantity_str` to *False*.
+   - Renamed and/or reordered the arguments of
+     :func:`~modelicares.util.setup_subplots`, and
+     :func:`~modelicares.exps.modelica_str` for clarity and simplicity.
+   - Supported Qt_ via several installations: PyQt4_, guidata_, and PySide_.
+     PySide_ is no longer required, but if no Qt_ installation is available,
+     then file dialogs are not available in :func:`~modelicares.util.save` or
+     the `loadres <loadres.html>`_ script.
 
 v0.11.1_ (2014-5-21) -- Updates:
 
-   - Fixed the release to PyPI.
+   - Fixed the release to PyPI_.
 
 v0.11.0_ (2014-5-21) -- Updates:
 
    - Added IPython notebooks (`tutorial
-     <http://nbviewer.ipython.org/github/kdavies4/ModelicaRes/blob/release/examples/tutorial.ipynb>`_
+     <http://nbviewer.ipython.org/github/kdavies4/ModelicaRes/blob/master/examples/tutorial.ipynb>`_
      and
-     `advanced <http://nbviewer.ipython.org/github/kdavies4/ModelicaRes/blob/release/examples/advanced.ipynb>`_).
+     `advanced <http://nbviewer.ipython.org/github/kdavies4/ModelicaRes/blob/master/examples/advanced.ipynb>`_).
    - Decoupled the Dymola-specific algorithms and placed them in a submodule.
      ModelicaRes is now independent with respect to the simulation tool.
    - New classes :class:`~modelicares.simres.SimResList` and
@@ -49,32 +136,32 @@ v0.11.0_ (2014-5-21) -- Updates:
      constants.
    - Added :mod:`~modelicares.util.si_prefix` (previously nested in
      :mod:`~modelicares.texunit`)
-   - The *fname* atribute in :class:`~modelicares.simres.SimRes` and
+   - The *fname* attribute in :class:`~modelicares.simres.SimRes` and
      :class:`~modelicares.linres.LinRes` now includes the absolute path.
      :meth:`~modelicares.simres.SimRes.fbase` returns the base filename without
      directory or extension.
    - Added :meth:`~modelicares.linres.LinRes.to_tf` to return a selected
      transfer function from the state-space representation.
    - Added pattern matching to :meth:`~modelicares.simres.SimRes.nametree`.
-   - Proper handling of unicode in simulation files.
+   - Proper handling of Unicode_ in simulation files.
    - Eliminated the dependence on :mod:`easygui`; using :mod:`PySide` (Qt)
      instead.
    - Renamed :mod:`~modelicares.base` to :mod:`~modelicares.util` for clarity.
      It is a package of utility functions and classes, not base classes.
    - Renamed internal submodules with leading underscore to denote that they
      are not meant for external use.
-   - Renamed :meth:`~modelicares.texunit.label_number` to
-     :meth:`~modelicares.texunit.label_number` and
-     :meth:`~modelicares.texunit.label_quantity` to
-     :meth:`~modelicares.texunit.quantity_str`.
-   - Merged :meth:`~modelicares.exps.modelica_array` and
-     :meth:`~modelicares.exps.modelica_boolean` into a new function,
-     :meth:`~modelicares.exps.modelica_str`.
+   - Renamed :func:`~modelicares.texunit.label_number` to
+     :func:`~modelicares.texunit.label_number` and
+     :func:`~modelicares.texunit.label_quantity` to
+     :func:`~modelicares.texunit.quantity_str`.
+   - Merged :func:`~modelicares.exps.modelica_array` and
+     :func:`~modelicares.exps.modelica_boolean` into a new function,
+     :func:`~modelicares.exps.modelica_str`.
    - Removed :class:`~modelicares.util.Quantity` and
-     :meth:`~modelicares.util.convert` from :mod:`~modelicares.util`.
-   - Removed :meth:`~modelicares.simres.merge_times`.  It is not used internally
+     :func:`~modelicares.util.convert` from :mod:`~modelicares.util`.
+   - Removed :func:`~modelicares.simres.merge_times`.  It is not used internally
      and probably is not very helpful externally.
-   - Removed :meth:`~modelicares.util.animate`.  matplotlib_ now has built-in
+   - Removed :func:`~modelicares.util.animate`.  matplotlib_ now has built-in
      methods for this; see http://matplotlib.org/api/animation_api.html.
 
 v0.10.0_ (2014-4-30) -- Updates:
@@ -103,8 +190,8 @@ v0.9.0_ (2014-3-17) -- Updates:
    - Improved support for `IPython <http://ipython.org/>`_.
    - Added dependence on `easygui <http://easygui.sourceforge.net/>`_.
    - Removed spaces in fahrenheit and celsius.
-   - Improved :meth:`~modelicares.exps.write_params` and
-     :meth:`~modelicares.exps.read_params`:
+   - Improved :func:`~modelicares.exps.write_params` and
+     :func:`~modelicares.exps.read_params`:
 
         1. More flexible with respect to whitespace
         2. Now accepts square brackets in parameter name
@@ -116,9 +203,10 @@ v0.9.0_ (2014-3-17) -- Updates:
    - Updated the credits.
    - Added *doc/_images* per tbeu_.
    - Narrowed the margins in HTML documentation.
-   - Explained setup in the :mod:`loadres` example.
+   - Explained setup in the loadres_ example.
    - Updated expected example output.
-   - Updated *matplotlibrc*.
+   - Updated `matplotlibrc
+     <https://github.com/kdavies4/ModelicaRes/blob/master/examples/matplotlibrc>`_.
 
 v0.8.2_ (2013-10-16) -- Updates:
 
@@ -126,22 +214,22 @@ v0.8.2_ (2013-10-16) -- Updates:
 
 v0.8.1_ (2013-8-6) -- Updates:
 
-   - Added missing :mod:`bin/loadres` script.
+   - Added missing loadres_ script.
 
 v0.8.0_ (2013-8-6) -- Updates:
 
-   - Updated :doc:`matplotlibrc` (default formatting).
-   - Added patterns to :meth:`~modelicares.exps.write_params` to match more
+   - Updated matplotlibrc_ (default formatting).
+   - Added patterns to :func:`~modelicares.exps.write_params` to match more
      entries in a dsin file.
-   - :meth:`~modelicares.exps.write_script` now clears the log between runs.
+   - :func:`~modelicares.exps.write_script` now clears the log between runs.
    - Fixed bug so that :meth:`~modelicares.simres.SimRes.plot` keeps the axis
      labels blank when *xlabel* = "", *ylabel1* = "", or *ylabel2* = "".
-   - :meth:`~modelicares.texunit.label_number` now uses "in" instead of "/" to
+   - :func:`~modelicares.texunit.label_number` now uses "in" instead of "/" to
      denote a quantity in a unit that involves a function other than simple
      scaling (e.g., degC, dB).
-   - :meth:`~modelicares.texunit.unit2tex` now automatically formats some units
+   - :func:`~modelicares.texunit.unit2tex` now automatically formats some units
      and constants.
-   - Added *color* option to :meth:`~modelicares.multi.multiplot`.
+   - Added *color* option to :func:`~modelicares.multi.multiplot`.
    - Added :meth:`~modelicares.simres.SimRes.variables` method to list variable
      names (same as :meth:`~modelicares.simres.SimRes.keys` and
      :meth:`~modelicares.simres.SimRes.names`).
@@ -154,29 +242,29 @@ v0.7.2_ (2013-7-9) -- Updates:
 
    - When a variable cannot be found, suggestions are now given.  See the
      example in :meth:`~modelicares.simres.SimRes.get_values`.
-   - :meth:`~modelicares.exps.write_script` now allows initialization scripts.
+   - :func:`~modelicares.exps.write_script` now allows initialization scripts.
    - Added warning message in :meth:`~modelicares.simres.SimRes.plot` if y-axis
      variable descriptions are different.
-   - :meth:`~modelicares.exps.write_script` now writes scripts that are more
+   - :func:`~modelicares.exps.write_script` now writes scripts that are more
      readable.
 
 v0.7.1_ (2013-7-7) -- Updates:
 
-   - Added missing files to :doc:`MANIFEST`.
+   - Added missing files to :file:`MANIFEST`_.
 
 v0.7.0_ (2013-7-7) -- Updates:
 
-   - Added :meth:`~modelicares.multi.multibode` and
-     :meth:`~modelicares.multi.multinyquist` to create Bode and Nyquist diagrams
+   - Added :func:`~modelicares.multi.multibode` and
+     :func:`~modelicares.multi.multinyquist` to create Bode and Nyquist diagrams
      of multiple linearizations.
    - Fixed and improved specification of axes in
      :meth:`~modelicares.linres.LinRes.bode` and
      :meth:`~modelicares.linres.LinRes.nyquist`.  The argument *ax* argument to
      :meth:`~modelicares.linres.LinRes.bode` is now *axes* instead---a tuple
      (pair) of axes.
-   - Fixed error with chosen directory in :meth:`~modelicares.base.save`
+   - Fixed error with chosen directory in :func:`~modelicares.base.save`
    - Added function to generate one-factor-at-a-time experiments.  The old
-     *permute* argument to :meth:`~modelicares.exps.gen_experiments` is now
+     *permute* argument to :func:`~modelicares.exps.gen_experiments` is now
      generalized to *design*, as in design of experiments.  Now, assign a
      function from :mod:`~modelicares.exps.doe` to that argument.
    - Square axes are now the default for Nyquist plots.
@@ -190,9 +278,9 @@ v0.6.2_ (2013-7-4) -- Updates:
      removed from :meth:`~modelicares.linres.LinRes.bode` and
      :meth:`~modelicares.linres.LinRes.nyquist`.  Instead, use *omega* with
      bounds or a list of frequencies.
-   - :meth:`~modelicares.exps.write_script` now saves the Dymola command log
+   - :func:`~modelicares.exps.write_script` now saves the Dymola command log
      with translation information.
-   - Fixed error in :mod:`loadres` script in loading from a folder.
+   - Fixed error in loadres_ script in loading from a folder.
    - Added option to :class:`~modelicares.simres.SimRes` (*constants_only*) to
      load only constants.
    - Added :meth:`~modelicares.simres.SimRes.keys` method to list variable names
@@ -202,13 +290,13 @@ v0.6.2_ (2013-7-4) -- Updates:
 
 v0.6.1_ (2013-7-2) -- Updates:
 
-   - Fixed :doc:`README.txt`.
+   - Fixed README.txt.
 
 v0.6.0_ (2013-7-2) -- Updates:
 
-   - Added :meth:`~modelicares.base.save` to save the current figure.
+   - Added :func:`~modelicares.base.save` to save the current figure.
    - Added *use_paren* option to :meth:`~modelicares.simres.SimRes.plot`.
-   - Changed :meth:`~modelicares.exps.write_script` to put results in folders
+   - Changed :func:`~modelicares.exps.write_script` to put results in folders
      instead of special renaming scheme.
    - Improved organization of the *examples* folder.
 
@@ -222,15 +310,15 @@ v0.5.2_ (2013-6-30) -- Updates:
 
 v0.5.1_ (2013-6-18) -- Updates:
 
-   - Fixed errors in :meth:`~modelicares.base.load_csv`.
+   - Fixed errors in :func:`~modelicares.base.load_csv`.
 
 v0.5_ (2013-6-5) -- Updates:
 
-   - Updated :doc:`README.txt`.
+   - Updated README.txt_.
 
 v0.4_ (2012-12-10) -- Updates:
 
-   - Added default of *label* = '' to :meth:`~modelicares.base.figure`.
+   - Added default of *label* = '' to :func:`~modelicares.base.figure`.
    - Updated documentation for Windows.
    - Added check for Python version (currently requires 2.7).
 
@@ -247,6 +335,10 @@ v0.2_ (2012-11-20) -- Updates:
 v0.1_ (2012-11-8) -- Initial release
 
 
+.. _vx.x.x: https://github.com/kdavies4/ModelicaRes/archive/vx.x.x.zip
+.. _v0.12.2: https://github.com/kdavies4/ModelicaRes/archive/v0.12.2.zip
+.. _v0.12.1: https://github.com/kdavies4/ModelicaRes/archive/v0.12.1.zip
+.. _v0.12.0: https://github.com/kdavies4/ModelicaRes/archive/v0.12.0.zip
 .. _v0.11.1: https://github.com/kdavies4/ModelicaRes/archive/v0.11.1.zip
 .. _v0.11.0: https://github.com/kdavies4/ModelicaRes/archive/v0.11.0.zip
 .. _v0.10.0: https://github.com/kdavies4/ModelicaRes/archive/v0.10.0.zip
@@ -268,5 +360,13 @@ v0.1_ (2012-11-8) -- Initial release
 .. _v0.2: https://github.com/kdavies4/ModelicaRes/archive/v0.2.zip
 .. _v0.1: https://github.com/kdavies4/ModelicaRes/archive/v0.1.zip
 
+.. _Semantic Versioning Specification: http://semver.org
+.. _PyPI: https://pypi.python.org/pypi/ModelicaRes
 .. _matplotlib: http://matplotlib.org/
 .. _Pandas DataFrame: http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.html?highlight=dataframe#pandas.DataFrame
+.. _Qt: http://qt-project.org/
+.. _PyQt4: http://www.riverbankcomputing.co.uk/software/pyqt/
+.. _guidata: https://code.google.com/p/guidata/
+.. _PySide: http://qt-project.org/wiki/pyside
+.. _Unicode: http://en.wikipedia.org/wiki/Unicode
+.. _natu: http://kdavies4.github.io/natu/

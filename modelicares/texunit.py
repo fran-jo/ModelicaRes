@@ -1,55 +1,64 @@
 #!/usr/bin/python
 """Functions to format numbers to support LaTeX_
 
-- :meth:`number_label` - Return a string to indicate a quantity in a unit
+- :func:`number_label` - Return a string to indicate a quantity in a unit
 
-- :meth:`quantity_str` - Return a string to represent a quantity as a number
+- :func:`quantity_str` - Return a string to represent a quantity as a number
   times a unit
 
-- :meth:`unit2tex` - Convert a Modelica_ unit string to LaTeX_
+- :func:`unit2tex` - Convert a Modelica_ unit string to LaTeX_
 
 
 .. _LaTeX: http://www.latex-project.org/
 """
 __author__ = "Kevin Davies"
 __email__ = "kdavies4@gmail.com"
-__copyright__ = "Copyright 2012-2013, Georgia Tech Research Corporation"
+__copyright__ = ("Copyright 2012-2014, Kevin Davies, Hawaii Natural Energy "
+                 "Institute, and Georgia Tech Research Corporation")
 __license__ = "BSD-compatible (see LICENSE.txt)"
 
+# Standard pylint settings for this project:
+# pylint: disable=I0011, C0302, C0325, R0903, R0904, R0912, R0913, R0914, R0915
+# pylint: disable=I0011, W0141, W0142
+
+# Other:
+# pylint: disable=I0011, C0103, W0622
+
+# TODO: Move some of this functionality to natu.
 
 import re
 
-from modelicares.util import si_prefix
-
+from .util import si_prefix, get_pow1000
 
 # Special replacements for unit strings in tex
-rpls = [(re.compile(rpl[0]), rpl[1])
-        for rpl in
-        [('degC', '^{\circ}C'),
-         ('degF', '^{\circ}F'),
-         ('%', r'\%'),
-         ('ohm', r'\Omega'),
-         ('angstrom', r'\AA'),
-         ('pi', r'\pi'),
-         ('alpha', r'\alpha'),
-         ('Phi', r'\Phi'),
-         ('mu', r'\mu'),
-         ('epsilon', r'\epsilon')]]
+REPLACEMENTS = [(re.compile(replacement[0]), replacement[1])
+                for replacement in
+                [('degC', r'^{\circ}C'),
+                 ('degF', r'^{\circ}F'),
+                 ('%', r'\%'),
+                 ('ohm', r'\Omega'),
+                 ('angstrom', r'\AA'),
+                 ('pi', r'\pi'),
+                 ('alpha', r'\alpha'),
+                 ('Phi', r'\Phi'),
+                 ('mu', r'\mu'),
+                 ('epsilon', r'\epsilon')]]
 
 
-def number_label(quantity="", unit=None, times='\,', per='\,/\,', roman=False):
+def number_label(quantity="", unit=None, times=r'\,', per=r'\,/\,',
+                 roman=False):
     r"""Return a string to label a number, specifically a quantity in a unit
 
     The unit is formatted with LaTeX_ as needed.
 
-    **Arguments:**
+    **Parameters:**
 
     - *quantity*: String describing the quantity
 
     - *unit*: String specifying the unit
 
          This is expressed in extended Modelica_ notation.  See
-         :meth:`unit2tex`.
+         :func:`unit2tex`.
 
     - *times*: LaTeX_ math string to indicate multiplication
 
@@ -71,8 +80,8 @@ def number_label(quantity="", unit=None, times='\,', per='\,/\,', roman=False):
             >>> number_label("Gain", "dB")
             'Gain in $dB$'
 
-    - *roman*: *True*, if the units should be typeset in Roman text (rather
-      than italics)
+    - *roman*: `True`, if the units should be typeset in Roman (rather than
+      italics)
 
     **Examples:**
 
@@ -86,33 +95,31 @@ def number_label(quantity="", unit=None, times='\,', per='\,/\,', roman=False):
 
     .. _Modelica: http://www.modelica.org/
     """
-    if unit in ['dB', 'degC', 'degF', 'Pag', 'kPag']:
-        return "%s in $%s$" % (quantity, unit2tex(unit, times, roman))
-    if unit and unit != '1':
-        return quantity + '$' + per + unit2tex(unit, times, roman) + '$'
-    else:
+    if not unit:
         return quantity
+    if set(unit).intersection({'Np', 'B', 'dB', 'degC', 'degF', 'Pag', 'kPag',
+                               'psig'}):
+        return quantity + " in ${:L}$".format(unit)
+    return quantity + '${}{:L}$'.format(per, unit)
 
-def quantity_str(number, unit='', format='%G', times='\,', roman=False):
-    r"""Generate text to write a quantity as a number times a unit.
+def quantity_str(number, unit='', use_si=True, format='%g', times=r'\,',
+                 roman=True):
+    r"""Generate a string to write a quantity as a number times a unit.
 
     If an exponent is present, then either a LaTeX-formatted exponential or a
     System International (SI) prefix is applied.
 
-    **Arguments:**
+    **Parameters:**
 
     - *number*: Floating point or integer number
 
     - *unit*: String specifying the unit
 
-         *unit* uses extended Modelica_ notation.  See :meth:`unit2tex`.
+         *unit* uses extended Modelica_ notation.  See :func:`unit2tex`.
+
+    - *use_si*: `True`, if SI prefixes should be used
 
     - *format*: Modified Python_ number formatting string
-
-         If LaTeX-formatted exponentials should be applied, then then use an
-         uppercase exponential formatter ('E' or 'G').  A lowercase exponential
-         formatter ('e' or 'g') will result in a System International (SI)
-         prefix, if applicable.
 
          .. Seealso::
             http://docs.python.org/release/2.5.2/lib/typesseq-strings.html
@@ -125,17 +132,17 @@ def quantity_str(number, unit='', format='%G', times='\,', roman=False):
          the significand and the exponent is always indicated by
          ":math:`\times`".
 
-    - *roman*: *True*, if the units should be typeset in Roman text (rather
-      than italics)
+    - *roman*: `True`, if the units should be typeset in Roman (rather than
+      Italics)
 
     **Examples:**
 
-       >>> quantity_str(1.2345e-3, 'm', format='%.3e', roman=True)
+       >>> quantity_str(1.2345e-3, 'm', format='%.3f')
        '1.234$\\,\\mathrm{mm}$'
 
        in LaTeX_: :math:`1.234\mathrm{\,mm}`
 
-       >>> quantity_str(1.2345e-3, 'm', format='%.3E', roman=True)
+       >>> quantity_str(1.2345e-3, 'm', use_si=False, format='%.3e')
        '1.234$\\times10^{-3}$$\\,\\mathrm{m}$'
 
        in LaTeX_: :math:`1.234\times10^{-3}\,\mathrm{m}`
@@ -145,7 +152,7 @@ def quantity_str(number, unit='', format='%G', times='\,', roman=False):
 
        in LaTeX_: :math:`1.2345\times10^{6}`
 
-       >>> quantity_str(1e3, '\Omega', format='%.1e', roman=True)
+       >>> quantity_str(1e3, '\Omega', format='%.1f')
        '1.0$\\,\\mathrm{k\\Omega}$'
 
        in LaTeX_: :math:`1.0\,\mathrm{k\Omega}`
@@ -153,47 +160,35 @@ def quantity_str(number, unit='', format='%G', times='\,', roman=False):
 
     .. _Python: http://www.python.org/
     """
-
-    # Apply engineering notation and SI prefixes.
-    if 'E' in format:
-        use_SI = False
-        format = format.replace('E', 'e')
-    elif 'G' in format:
-        use_SI = False
-        format = format.replace('G', 'g')
-    else:
-        use_SI = True
+    # Factor out powers of 1000 if SI prefixes will be used.
+    if use_si and unit:
+        pow1000 = max(min(get_pow1000(number), 8), -8)
+        number /= 1000 ** pow1000
+        unit = si_prefix(pow1000) + unit
 
     # Format the number as a string.
     numstr = format % number
+    numstr = numstr.replace('E', 'e')
 
-    # Use LaTeX formatting or SI prefixes if an exponent is present.
-    try: # to format the exponent in LaTeX.
+    # Use LaTeX formatting for scientific notation.
+    try:
         significand, exponent = numstr.split('e')
-        if use_SI:
-            e = int(exponent)
-            if e >= 0:
-                pow1000 = int(e/3) # The int casting is necessary in Python3.
-            else:
-                pow1000 = -int(-e/3)
-            if -8 <= pow1000 <= 8:
-                unit = si_prefix(pow1000) + unit
-                numstr, exponent = (format % (number/1000**pow1000)).split('e')
-        if not use_SI or exponent != '+00': # Use LaTeX formatting.
-            exponent = (exponent[0] + exponent[1:].lstrip('0')).lstrip('+')
-            numstr = significand + r'$\times10^{' + exponent + '}$'
-    except:
-        pass # since no exponent.
+    except ValueError:
+        pass  # No exponent
+    else:
+        numstr = significand + r'$\times10^{%i}$' % int(exponent)
+
+    # Return the number with the unit.
     if unit:
-        return numstr + '$\,' + unit2tex(unit, times, roman) + '$'
+        return numstr + r'$' + times + unit2tex(unit, times, roman) + '$'
     else:
         return numstr
 
 
-def unit2tex(unit, times='\,', roman=False):
+def unit2tex(unit, times=r'\,', roman=False):
     r"""Convert a Modelica_ unit string to LaTeX_.
 
-    **Arguments:**
+    **Parameters:**
 
     - *unit*: Unit string in extended Modelica_ notation
 
@@ -209,8 +204,8 @@ def unit2tex(unit, times='\,', roman=False):
          *times* is applied between the number and the first unit and between
          units.  The default is 3/18 quad space.
 
-    - *roman*: *True*, if the units should be typeset in Roman text (rather
-      than italics)
+    - *roman*: `True`, if the units should be typeset in Roman (rather than
+      italics)
 
     **Example:**
 
@@ -257,16 +252,17 @@ def unit2tex(unit, times='\,', roman=False):
             unit = _process_group(unit, times)
 
         # Make the special replacements.
-        for rpl in rpls:
+        for rpl in REPLACEMENTS:
             unit = rpl[0].sub(rpl[1], unit)
 
         if roman:
-            unit = '\mathrm{%s}' % unit
+            unit = r'\mathrm{%s}' % unit
 
     return unit
 
 
 if __name__ == '__main__':
-    """Test the contents of this file."""
+    # Test the contents of this file.
+
     import doctest
     doctest.testmod()

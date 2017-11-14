@@ -1,85 +1,121 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-"""Classes and functions to help plot and interpret experimental data
+# !/usr/bin/python # pylint: disable=I0011, C0302
+r"""Classes and functions to help plot and interpret experimental data
 
 **Classes:**
 
-- :class:`ArrowLine` - A matplotlib subclass to draw an arrowhead on a line
+- :class:`ArrowLine` - A matplotlib_ subclass to draw an arrowhead on a line
+
+- :class:`CallDict` - Dictionary that when called returns a dictionary of the
+  results from calling its entries
+
+- :class:`CallList` - List that when called returns a list of the results from
+  calling its elements
+
+- :class:`ParamDict` - Dictionary that prints its items as nested tuple-based
+  modifiers, formatted for Modelica_
 
 **Functions:**
 
-- :meth:`add_arrows` - Overlay arrows with annotations on top of a pre-plotted
+- :func:`accept_dict` - Decorator to also accept a dictionary as a single
+  positional argument
+
+- :func:`add_arrows` - Overlay arrows with annotations on top of a pre-plotted
   line.
 
-- :meth:`add_hlines` - Add horizontal lines to a set of axes with optional
+- :func:`add_hlines` - Add horizontal lines to a set of axes with optional
   labels.
 
-- :meth:`add_vlines` - Add vertical lines to a set of axes with optional
+- :func:`add_vlines` - Add vertical lines to a set of axes with optional
   labels.
 
-- :meth:`cast_sametype` - Decorator to cast the output of a method as an instance of
-  the containing class
+- :func:`basename` - Return the base filename from *fname*.
 
-- :meth:`color` - Plot 2D scalar data on a color axis in 2D Cartesian
+- :func:`call` - Run a system command, with the option to silence the output.
+
+- :func:`cast_sametype` - Decorate a method to return an instance of the
+  containing class.
+
+- :func:`color` - Plot 2D scalar data on a color axis in 2D Cartesian
   coordinates.
 
-- :meth:`closeall` - Close all open figures (shortcut to the
-  :meth:`destroy_all` from :class:`matplotlib._pylab_helpers.Gcf`).
+- :func:`closeall` - Close all open figures (shortcut to :func:`destroy_all`
+  from :class:`matplotlib._pylab_helpers.Gcf`).
 
-- :meth:`expand_path` - Expand a file path by replacing '~' with the user
-  directory and makes the path absolute.
+- :func:`cleanpath` - Clean up a file path by replacing '~' with the user
+  directory, making the path absolute, and replacing '/' with '\' on Windows.
 
-- :meth:`flatten_dict` - Flatten a nested dictionary.
+- :func:`figure` - Create a figure and set its label.
 
-- :meth:`flatten_list` - Flatten a nested list.
+- :func:`flatten_dict` - Flatten a nested dictionary.
 
-- :meth:`figure` - Create a figure and set its label.
-
-- :meth:`get_indices` - Return the pair of indices that bound a target value in
+- :func:`get_indices` - Return the pair of indices that bound a target value in
   a monotonically increasing vector.
 
-- :meth:`get_pow10` - Return the exponent of 10 for which the significand
-  of a number is within the range [1, 10).
-
-- :meth:`get_pow1000` - Return the exponent of 1000 for which the
+- :func:`get_pow1000` - Return the exponent of 1000 for which the
   significand of a number is within the range [1, 1000).
 
-- :meth:`load_csv` - Load a CSV file into a dictionary.
+- :func:`load_csv` - Load a CSV file into a dictionary.
 
-- :meth:`match` - Reduce a list of strings to those that match a pattern.
+- :func:`match` - Reduce a list of strings to those that match a pattern.
 
-- :meth:`plot` - Plot 1D scalar data as points and/or line segments in 2D
+- :func:`modelica_str` - Express a Python_ value as a Modelica_ string.
+
+- :func:`next_nonblank` - Advance to the next non-blank line of a file and
+  return that line minus any whitespace on the right.
+
+- :func:`plot` - Plot 1D scalar data as points and/or line segments in 2D
   Cartesian coordinates.
 
-- :meth:`quiver` - Plot 2D vector data as arrows in 2D Cartesian coordinates.
+- :func:`quiver` - Plot 2D vector data as arrows in 2D Cartesian coordinates.
 
-- :meth:`save` - Save the current figures as images in a format or list of
+- :func:`read_values` - Read integers or floats from a formatted text file.
+
+- :func:`save` - Save a figure in an image format or list of formats.
+
+- :func:`saveall` - Save all open figures as images in a format or list of
   formats.
 
-- :meth:`saveall` - Save all open figures as images in a format or list of
-  formats.
+- :func:`setup_subplots` - Create an array of subplots and return their axes.
 
-- :meth:`setup_subplots` - Create an array of subplots and return their axes.
-
-- :meth:`shift_scale_x` - Apply an offset and a factor as necessary to the x
+- :func:`shift_scale_x` - Apply an offset and a factor as necessary to the x
   axis.
 
-- :meth:`shift_scale_y` - Apply an offset and a factor as necessary to the y
+- :func:`shift_scale_y` - Apply an offset and a factor as necessary to the y
   axis.
 
-- :meth:`si_prefix` - Return the SI prefix for a power of 1000.
+- :func:`si_prefix` - Return the SI prefix for a power of 1000.
 
-- :meth:`tree` - Return a tree of strings as a nested dictionary.
+- :func:`tree` - Return a nested dictionary generated from keys and values.
+
+- :func:`write_values` - Write integers or floats to a formatted text file.
+
+
+.. _matplotlib: http://www.matplotlib.org/
+.. _Python: http://www.python.org/
+.. _Modelica: http://www.modelica.org/
 """
 __author__ = "Kevin Davies"
 __email__ = "kdavies4@gmail.com"
-__credits__ = ["Jason Grout", "Jason Heeris", "Joerg Raedler"]
-__copyright__ = "Copyright 2012-2013, Georgia Tech Research Corporation"
+__credits__ = ["Arnout Aertgeerts", "Jason Grout", "Jason Heeris",
+               "Joerg Raedler"]
+__copyright__ = ("Copyright 2012-2014, Kevin Davies, Hawaii Natural Energy "
+                 "Institute, and Georgia Tech Research Corporation")
 __license__ = "BSD-compatible (see LICENSE.txt)"
 
-import os
-import numpy as np
+# Standard pylint settings for this project:
+# pylint: disable=I0011, C0302, C0325, R0903, R0904, R0912, R0913, R0914, R0915
+# pylint: disable=I0011, W0141, W0142
+
+# Other:
+# pylint: disable=I0011, C0103, C0301, E1101, F0401, R0921, W0102, W0621
+
 import matplotlib.pyplot as plt
+import numpy as np
+import os
+import re as regexp
+import subprocess
+import sys
+import time
 
 from collections import MutableMapping
 from decimal import Decimal
@@ -92,22 +128,54 @@ from matplotlib import rcParams
 from matplotlib._pylab_helpers import Gcf
 from matplotlib.cbook import iterable
 from matplotlib.lines import Line2D
-from re import compile as re_compile
+from natu.util import flatten_list
 from six import string_types
-from PySide.QtGui import QFileDialog
 
+# Load the getSaveFileName function from an available Qt installation.
+try:
+    from PyQt4.QtGui import QFileDialog
+    getSaveFileName = (lambda *args, **kwargs:
+                       str(QFileDialog.getSaveFileName(*args, **kwargs)))
+except ImportError:
+    try:
+        from guidata.qt.QtGui import QFileDialog
+        getSaveFileName = (lambda *args, **kwargs:
+                           str(QFileDialog.getSaveFileName(*args, **kwargs)))
+    except ImportError:
+        try:
+            from PySide.QtGui import QFileDialog
+            getSaveFileName = (lambda *args, **kwargs:
+                               QFileDialog.getSaveFileName(*args, **kwargs)[0])
+        except ImportError:
+            getSaveFileName = lambda *args, **kwargs: None
 
 # Function to close all open figures
 closeall = Gcf.destroy_all
 
-def add_arrows(p, x_locs=[0], xstar_offset=0, ystar_offset=0,
-               lstar=0.05, label='',
-               orientation='tangent', color='r'):
+
+def accept_dict(func):
+    """Decorator to also accept a dictionary as a single positional argument
+
+    If there is only one positional argument and it is a :class:`dict`, then its
+    contents are passed as keyword arguments into the original function.
+    """
+    @wraps(func)
+    def wrapped(*space, **kwargs):
+        if len(space) == 1 and isinstance(space[0], dict):
+            return func(**space[0])
+        else:
+            return func(*space, **kwargs)
+
+    return wrapped
+
+
+def add_arrows(plot, x_locs=[0], xstar_offset=0, ystar_offset=0,
+               lstar=0.05, label='', orientation='tangent', color='r'):
     """Overlay arrows with annotations on a pre-plotted line.
 
-    **Arguments:**
+    **Parameters:**
 
-    - *p*: A plot instance (:class:`matplotlib.lines.Line2D` object)
+    - *plot*: A plot instance (:class:`matplotlib.lines.Line2D` object)
 
     - *x_locs*: x-axis locations of the arrows
 
@@ -133,9 +201,9 @@ def add_arrows(p, x_locs=[0], xstar_offset=0, ystar_offset=0,
     from math import atan, cos, sin
 
     # Get data from the plot lines object.
-    x_dat = plt.getp(p, 'xdata')
-    y_dat = plt.getp(p, 'ydata')
-    ax = p.get_axes()
+    x_dat = plt.getp(plot, 'xdata')
+    y_dat = plt.getp(plot, 'ydata')
+    ax = plot.get_axes()
     Deltax = np.diff(ax.get_xlim())[0]
     Deltay = np.diff(ax.get_ylim())[0]
 
@@ -153,18 +221,18 @@ def add_arrows(p, x_locs=[0], xstar_offset=0, ystar_offset=0,
         x_pts = x_dat.take([i_a, i_b])
         y_pts = y_dat.take([i_a, i_b])
         if orientation == 'vertical':
-            dx = lstar*Deltax
+            dx = lstar * Deltax
             dy = 0
         elif orientation == 'horizontal':
             dx = 0
-            dy = lstar*Deltay
-        else: # tangent
-            theta = atan((y_pts[1] - y_pts[0])*Deltax/((x_pts[1] -
-                                                        x_pts[0])*Deltay))
-            dx = lstar*Deltax*cos(theta)
-            dy = lstar*Deltay*sin(theta)
-        x_mid = sum(x_pts)/2
-        y_mid = sum(y_pts)/2
+            dy = lstar * Deltay
+        else:  # tangent
+            theta = atan((y_pts[1] - y_pts[0]) * Deltax / ((x_pts[1] -
+                                                            x_pts[0]) * Deltay))
+            dx = lstar * Deltax * cos(theta)
+            dy = lstar * Deltay * sin(theta)
+        x_mid = sum(x_pts) / 2
+        y_mid = sum(y_pts) / 2
 
         # Add the arrow and text.
         line = ArrowLine([x_mid - dx, x_mid + dx], [y_mid - dy, y_mid + dy],
@@ -173,23 +241,23 @@ def add_arrows(p, x_locs=[0], xstar_offset=0, ystar_offset=0,
                          arrowsize=10)
         ax.add_line(line)
         if label:
-            ax.text(x_mid + xstar_offset*Deltax, y_mid + ystar_offset*Deltax,
+            ax.text(x_mid + xstar_offset * Deltax, y_mid + ystar_offset * Deltax,
                     s=label, fontsize=12)
 
 
 def add_hlines(ax=None, positions=[0], labels=[], **kwargs):
-    """Add horizontal lines to a set of axes with optional labels.
+    r"""Add horizontal lines to a set of axes with optional labels.
 
-    **Arguments:**
+    **Parameters:**
 
-    - *ax*: Axes (:class:`matplotlib.axes` object)
+    - *ax*: Axes (:class:`matplotlib.axes.Axes` object)
 
     - *positions*: Positions (along the x axis)
 
     - *labels*: List of labels for the lines
 
     - *\*\*kwargs*: Line properties (propagated to
-      :meth:`matplotlib.pyplot.axhline`)
+      :func:`matplotlib.pyplot.axhline`)
 
          E.g., ``color='k', linestyle='--', linewidth=0.5``
 
@@ -202,32 +270,32 @@ def add_hlines(ax=None, positions=[0], labels=[], **kwargs):
     if not ax:
         ax = plt.gca()
     if not iterable(positions):
-        xpositions = (xpositions,)
+        positions = (positions,)
     if not iterable(labels):
         labels = (labels,)
 
     # Add and label lines.
     for position in positions:
         ax.axhline(y=position, **kwargs)
-    xpos = sum(ax.axis()[0:2])/2.0
+    xpos = sum(ax.axis()[0:2]) / 2.0
     for i, label in enumerate(labels):
         ax.text(xpos, positions[i], label, backgroundcolor='w',
                 horizontalalignment='center', verticalalignment='center')
 
 
 def add_vlines(ax=None, positions=[0], labels=[], **kwargs):
-    """Add vertical lines to a set of axes with optional labels.
+    r"""Add vertical lines to a set of axes with optional labels.
 
-    **Arguments:**
+    **Parameters:**
 
-    - *ax*: Axes (matplotlib.axes object)
+    - *ax*: Axes (:class:`matplotlib.axes.Axes` object)
 
     - *positions*: Positions (along the x axis)
 
     - *labels*: List of labels for the lines
 
     - *\*\*kwargs*: Line properties (propagated to
-      :meth:`matplotlib.pyplot.axvline`)
+      :func:`matplotlib.pyplot.axvline`)
 
          E.g., ``color='k', linestyle='--', linewidth=0.5``
 
@@ -247,85 +315,128 @@ def add_vlines(ax=None, positions=[0], labels=[], **kwargs):
     # Add and label lines.
     for position in positions:
         ax.axvline(x=position, **kwargs)
-    ypos = sum(ax.axis()[2::])/2.0
+    ypos = sum(ax.axis()[2::]) / 2.0
     for i, label in enumerate(labels):
         ax.text(positions[i], ypos, label, backgroundcolor='w',
                 horizontalalignment='center', verticalalignment='center')
 
 
-def cast_sametype(f):
-    """Decorator to cast the output of a method as an instance of the
-    containing class.
+def basename(fname):
+    """Return the base filename from *fname*.
+
+    Unlike :func:`os.path.basename`, this function strips the file extension."""
+    return os.path.splitext(os.path.basename(fname))[0]
+
+
+def call(args, silent=False):
+    """Run a system command, with the options to silence the output.
+
+    **Parameters:**
+
+    - *args*: List of program arguments or a single string
+
+    - *silent*: *False*, if the output should be printed
     """
-    @wraps(f)
+    subprocess.call(args, stdout=open(os.devnull, 'w') if silent else None)
+
+
+def cast_sametype(meth):
+    """Decorate a method to return an instance of the containing class.
+    """
+    @wraps(meth)
     def wrapped(self, *args, **kwargs):
         """Function that casts its output as self.__class__
         """
-        return self.__class__(f(self, *args, **kwargs))
+        return self.__class__(meth(self, *args, **kwargs))
 
     return wrapped
 
 
 def color(ax, c, *args, **kwargs):
-    """Plot 2D scalar data on a color axis in 2D Cartesian coordinates.
+    r"""Plot 2D scalar data on a color axis in 2D Cartesian coordinates.
 
     This uses a uniform grid.
 
-    **Arguments:**
+    **Parameters:**
 
     - *ax*: Axis onto which the data should be plotted
 
     - *c*: color- or c-axis data (2D array)
 
     - *\*args*, *\*\*kwargs*: Additional arguments for
-      :meth:`matplotlib.pyplot.imshow`
+      :func:`matplotlib.pyplot.imshow`
 
     **Example:**
 
-    .. plot:: examples/util-color.py
-       :alt: example of color()
+    .. code-block:: python
+
+       >>> import numpy as np
+       >>> import matplotlib.pyplot as plt
+
+       >>> x, y = np.meshgrid(np.arange(0, 2*np.pi, 0.2),
+       ...                    np.arange(0, 2*np.pi, 0.2))
+       >>> c = np.cos(x) + np.sin(y)
+
+       >>> fig = plt.figure()
+       >>> ax = fig.add_subplot(111)
+       >>> color(ax, c) # doctest: +ELLIPSIS
+       <matplotlib.image.AxesImage object at 0x...>
     """
     return ax.imshow(c, *args, **kwargs)
 
 
-def expand_path(path):
-    r"""Expand a file path by replacing '~' with the user directory and making
-    the path absolute.
+def dict_to_lists(dic):
+    keys = []
+    values = []
+
+    for key, value in dic.iteritems():
+        keys.append(key)
+        values.append(value)
+
+    return keys, values
+
+
+def cleanpath(path):
+    r"""Clean up a file path by replacing '~' with the user directory, making
+    the path absolute, and replacing '/' with '\' on Windows.
 
     **Example:**
 
-    .. code-block:: python
+    >>> cleanpath('~/Documents') # doctest: +ELLIPSIS
+    '...Documents'
 
-       >>> from modelicares import *
-
-       >>> expand_path('~/Documents') # doctest: +ELLIPSIS
-       '...Documents'
-       >>> # where ... is '/home/user/' on Linux or 'C:\Users\user\' on
-       >>> # Windows (and "user" is the user id).
+    where ... is '/home/user/' on Linux or 'C:\Users\user\' on Windows (and
+    "user" is the user id).
     """
-    return os.path.abspath(os.path.expanduser(path))
+    return os.path.abspath(os.path.expanduser(os.path.normpath(path)))
 
 
 def figure(label='', *args, **kwargs):
-    """Create a figure and set its label.
+    r"""Create a figure and set its label.
 
-    **Arguments:**
+    **Parameters:**
 
     - *label*: String to apply to the figure's *label* property
 
     - *\*args*, *\*\*kwargs*: Additional arguments for
-      :meth:`matplotlib.pyplot.figure`
+      :func:`matplotlib.pyplot.figure`
 
     **Example:**
 
     .. code-block:: python
+
+       >>> import matplotlib.pyplot as plt
 
        >>> fig = figure("velocity_vs_time") # doctest: +ELLIPSIS
        >>> plt.getp(fig, 'label')
        'velocity_vs_time'
 
+    .. testcleanup::
+
+       >>> plt.close()
+
     .. Note::  The *label* property is used as the base filename in the
-       :meth:`saveall` method.
+       :func:`save` and :func:`saveall` functions.
     """
     fig = plt.figure(*args, **kwargs)
     plt.setp(fig, 'label', label)
@@ -337,7 +448,7 @@ def figure(label='', *args, **kwargs):
 def flatten_dict(d, parent_key='', separator='.'):
     """Flatten a nested dictionary.
 
-    **Arguments:**
+    **Parameters:**
 
     - *d*: Dictionary (may be nested to an arbitrary depth)
 
@@ -348,9 +459,12 @@ def flatten_dict(d, parent_key='', separator='.'):
 
     **Example:**
 
-       >>> from modelicares import *
-       >>> flatten_dict(dict(a=1, b=dict(c=2, d='hello')))
-       {'a': 1, 'b.c': 2, 'b.d': 'hello'}
+    >>> flatten_dict(dict(a=1, b=dict(c=2, d='hello'))) # doctest: +SKIP
+    {'a': 1, 'b.c': 2, 'b.d': 'hello'}
+
+    .. testcleanup::
+
+       >>> assert flatten_dict(dict(a=1, b=dict(c=2, d='hello'))) == {'a': 1, 'b.c': 2, 'b.d': 'hello'}
     """
     # From
     # http://stackoverflow.com/questions/6027558/flatten-nested-python-dictionaries-compressing-keys,
@@ -365,47 +479,10 @@ def flatten_dict(d, parent_key='', separator='.'):
     return dict(items)
 
 
-def flatten_list(l, ltypes=(list, tuple)):
-    """Flatten a nested list.
-
-    **Arguments:**
-
-    - *l*: List (may be nested to an arbitrary depth)
-
-          If the type of *l* is not in ltypes, then it is placed in a list.
-
-    - *ltypes*: Tuple (not list) of accepted indexable types
-
-    **Example:**
-
-       >>> from modelicares import *
-       >>> flatten_list([1, [2, 3, [4]]])
-       [1, 2, 3, 4]
-    """
-    # Based on
-    # http://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html,
-    # 10/28/2011
-    ltype = type(l)
-    if ltype not in ltypes: # So that strings aren't split into characters
-        return [l]
-    l = list(l)
-    i = 0
-    while i < len(l):
-        while isinstance(l[i], ltypes):
-            if l[i]:
-                l[i:i + 1] = l[i]
-            else:
-                l.pop(i)
-                i -= 1
-                break
-        i += 1
-    return ltype(l)
-
-
 def _gen_offset_factor(label, tick_lo, tick_up, eagerness=0.325):
     """Apply an offset and a scaling factor to a label if necessary.
 
-    **Arguments:**
+    **Parameters:**
 
     - *tick_lo*: Lower tick value
 
@@ -424,13 +501,13 @@ def _gen_offset_factor(label, tick_lo, tick_up, eagerness=0.325):
 
     3. Exponent of 1000 which can be factored from the number (pow1000)
     """
-    # TODO: Utilize matplotlib's support for units?
+    # TODO: Use matplotlib's support for units?
 
     def _label_offset_factor(label, offset_factor, offset_pow1000, pow1000):
         """Format an offset and factor into a LaTeX string and add to it an
         existing string.
         """
-        DIVIDE = r'\,/\,' # LaTeX string for division
+        DIVIDE = r'\,/\,'  # LaTeX string for division
 
         # Add the offset string.
         if offset_factor:
@@ -440,24 +517,24 @@ def _gen_offset_factor(label, tick_lo, tick_up, eagerness=0.325):
                 label += r'$\,-\,%i$' % offset_factor
             if offset_pow1000:
                 label = label.rstrip(r'$') + (r'\times10^{%i}$' %
-                                              (3*offset_pow1000))
+                                              (3 * offset_pow1000))
 
         # Add the scaling notation.
         if pow1000:
             if offset_factor:
                 label = (r'$($' + label.rstrip(r'$') + r')' + DIVIDE +
-                         r'10^{%i}$' % (3*pow1000))
+                         r'10^{%i}$' % (3 * pow1000))
             else:
                 if DIVIDE in label:
                     desc, unit = label.split(DIVIDE, 1)
                     if unit.endswith(r')$'):
-                        label = (desc + DIVIDE + r'(10^{%i}' % (3*pow1000) +
+                        label = (desc + DIVIDE + r'(10^{%i}' % (3 * pow1000) +
                                  unit.lstrip(r'('))
                     else:
-                        label = (desc + DIVIDE + r'(10^{%i}' % (3*pow1000) +
+                        label = (desc + DIVIDE + r'(10^{%i}' % (3 * pow1000) +
                                  unit.rstrip(r'$') + r')$')
                 else:
-                    label += r'$' + DIVIDE + r'10^{%i}$' % (3*pow1000)
+                    label += r'$' + DIVIDE + r'10^{%i}$' % (3 * pow1000)
         return label
 
     offset = 0
@@ -466,10 +543,10 @@ def _gen_offset_factor(label, tick_lo, tick_up, eagerness=0.325):
     outside = min(tick_lo, 0) + max(tick_up, 0)
     if outside != 0:
         inside = max(tick_lo, 0) + min(tick_up, 0)
-        if inside/outside > 1 - eagerness:
-            offset = inside - np.mod(inside, 1000**get_pow1000(inside))
+        if inside / outside > 1 - eagerness:
+            offset = inside - np.mod(inside, 1000 ** get_pow1000(inside))
             offset_pow1000 = get_pow1000(offset)
-            offset_factor = offset/1000**offset_pow1000
+            offset_factor = offset / 1000 ** offset_pow1000
             outside = min(tick_lo - offset, 0) + max(tick_up - offset, 0)
     pow1000 = get_pow1000(outside)
     label = _label_offset_factor(label, offset_factor, offset_pow1000, pow1000)
@@ -480,7 +557,7 @@ def get_indices(x, target):
     """Return the pair of indices that bound a target value in a monotonically
     increasing vector.
 
-    **Arguments:**
+    **Parameters:**
 
     - *x*: Vector
 
@@ -488,9 +565,8 @@ def get_indices(x, target):
 
     **Example:**
 
-       >>> from modelicares import *
-       >>> get_indices([0, 1, 2], 1.6)
-       (1, 2)
+    >>> get_indices([0, 1, 2], 1.6)
+    (1, 2)
     """
     if target <= x[0]:
         return 0, 0
@@ -501,7 +577,7 @@ def get_indices(x, target):
         i_1 = 0
         i_2 = len(x) - 1
         while i_1 < i_2 - 1:
-            i_mid = (i_1 + i_2)/2
+            i_mid = int((i_1 + i_2) / 2)
             if x[i_mid] == target:
                 return i_mid, i_mid
             elif x[i_mid] > target:
@@ -511,34 +587,14 @@ def get_indices(x, target):
     return i_1, i_2
 
 
-def get_pow10(num):
-    """Return the exponent of 10 for which the significand of a number is
-    within the range [1, 10).
-
-    **Example:**
-
-       >>> get_pow10(50)
-       1
-    """
-    # Based on an algorithm by Jason Heeris 11/18/2009:
-    #
-
-    dnum = Decimal(str(num))
-    if dnum == 0:
-        return 0
-    elif dnum < 0:
-        dnum = -dnum
-    return int(floor(dnum.log10()))
-
-
 def get_pow1000(num):
     """Return the exponent of 1000 for which the significand of a number is
     within the range [1, 1000).
 
     **Example:**
 
-       >>> get_pow1000(1e5)
-       1
+    >>> get_pow1000(1e5)
+    1
     """
     # Based on an algorithm by Jason Heeris 11/18/2009:
     #     http://www.mail-archive.com/matplotlib-users@lists.sourceforge.net/msg14433.html
@@ -548,15 +604,15 @@ def get_pow1000(num):
         return 0
     elif dnum < 0:
         dnum = -dnum
-    return int(floor(dnum.log10()/3))
+    return int(floor(dnum.log10() / 3))
 
 
 def load_csv(fname, header_row=0, first_data_row=None, types=None, **kwargs):
-    """Load a CSV file into a dictionary.
+    r"""Load a CSV file into a dictionary.
 
     The strings from the header row are used as dictionary keys.
 
-    **Arguments:**
+    **Parameters:**
 
     - *fname*: Path and name of the file
 
@@ -574,14 +630,18 @@ def load_csv(fname, header_row=0, first_data_row=None, types=None, **kwargs):
          made to cast each column into :class:`int`, :class:`float`, and
          :class:`str` (in that order).
 
-    - *\*\*kwargs*: Additional arguments for :meth:`csv.reader`
+    - *\*\*kwargs*: Additional arguments for :func:`csv.reader`
 
     **Example:**
 
-    >>> from modelicares import *
     >>> data = load_csv("examples/load-csv.csv", header_row=2)
-    >>> print("The keys are: %s" % data.keys())
-    The keys are: ['Price', 'Description', 'Make', 'Model', 'Year']
+    >>> print("The keys are: %s" % list(data)) # doctest: +SKIP
+    The keys are: ['Description', 'Make', 'Model', 'Price', 'Year']
+
+    .. testcleanup::
+
+       >>> sorted(data)
+       ['Description', 'Make', 'Model', 'Price', 'Year']
     """
     import csv
 
@@ -595,12 +655,13 @@ def load_csv(fname, header_row=0, first_data_row=None, types=None, **kwargs):
         next(reader)
     keys = next(reader)
     data = dict.fromkeys(keys)
-    #print("The keys are: ")
-    #print(keys)
+    # print("The keys are: ")
+    # print(keys)
 
     # Read the data.
     if first_data_row:
-        for row in range(first_data_row - header_row - 1):
+        # pylint: disable=I0011, W0612
+        for __ in range(first_data_row - header_row - 1):
             next(reader)
     if types:
         for i, (key, column, t) in enumerate(zip(keys, zip(*reader), types)):
@@ -618,11 +679,11 @@ def load_csv(fname, header_row=0, first_data_row=None, types=None, **kwargs):
         for key, column in zip(keys, zip(*reader)):
             try:
                 data[key] = np.array(map(int, column))
-            except:
+            except ValueError:
                 try:
                     data[key] = np.array(map(float, column))
-                except:
-                    data[key] = map(str, column)
+                except ValueError:
+                    data[key] = column
 
     return data
 
@@ -632,7 +693,9 @@ def match(strings, pattern=None, re=False):
 
     By default, all of the strings are returned.
 
-    **Arguments:**
+    **Parameters:**
+
+    - *strings*: List of strings
 
     - *pattern*: Case-sensitive string used for matching
 
@@ -649,108 +712,160 @@ def match(strings, pattern=None, re=False):
         ============   ============================
 
         Wildcard characters ('\*') are not automatically added at the
-        beginning or the end of the pattern.  For example, 'x\*' matches
-        variables that begin with "x", whereas '\*x\*' matches all variables
-        that contain "x".
+        beginning or the end of the pattern.  For example, '\*x\*' matches all
+        strings that contain "x", but 'x\*' matches only the strings that begin
+        with "x".
 
-      - If *re* is *True*, regular expressions are used a la `Python's re
+      - If *re* is `True`, regular expressions are used a la `Python's re
         module <http://docs.python.org/2/library/re.html>`_.  See also
         http://docs.python.org/2/howto/regex.html#regex-howto.
 
-        Since :mod:`re.search` is used to produce the matches, it is as if
+        Since :func:`re.search` is used to produce the matches, it is as if
         wildcards ('.*') are automatically added at the beginning and the
-        end.  For example, 'x' matches all variables that contain "x".  Use
-        '^x$' to match only the variables that begin with "x" and 'x$' to
-        match only the variables that end with "x".
+        end.  For example, 'x' matches all strings that contain "x".  Use '^x$'
+        to match only the strings that begin with "x" and 'x$' to match only the
+        strings that end with "x".
 
         Note that '.' is a subclass separator in Modelica_ but a wildcard in
         regular expressions.  Escape the subclass separator as '\\.'.
 
-    - *re*: *True* to use regular expressions (*False* to use shell style)
+    - *re*: `True` to use regular expressions (*False* to use shell style)
 
     **Example:**
 
-       >>> from modelicares.util import match
-       >>> match(['apple', 'orange', 'banana'], '*e')
-       ['apple', 'orange']
+    >>> match(['apple', 'orange', 'banana'], '*e')
+    ['apple', 'orange']
 
 
     .. _Modelica: http://www.modelica.org/
     """
     if pattern is None or (pattern in ['.*', '.+', '.', '.?', ''] if re
                            else pattern == '*'):
-        return list(strings) # Shortcut
+        return list(strings)  # Shortcut
     else:
         if re:
-            matcher = re_compile(pattern).search
+            matcher = regexp.compile(pattern).search
         else:
             matcher = lambda name: fnmatchcase(name, pattern)
         return list(filter(matcher, strings))
 
 
+def modelica_str(value):
+    """Express a Python_ value as a Modelica_ string.
+
+    A Boolean variable (:class:`bool`) becomes 'true' or 'false' (lowercase).
+
+    For NumPy_ arrays, square brackets are curled.
+
+    **Examples:**
+
+    Booleans:
+
+    >>> # Booleans:
+    >>> modelica_str(True)
+    'true'
+
+    Arrays:
+
+    .. code-block:: python
+
+       >>> import numpy as np
+
+       >>> modelica_str(np.array([[1, 2], [3, 4]]))
+       '{{1, 2}, {3, 4}}'
+
+       >>> modelica_str(np.array([[True, True], [False, False]]))
+       '{{true, true}, {false, false}}'
+    """
+    if isinstance(value, bool):
+        return 'true' if value else 'false'
+    elif isinstance(value, np.ndarray):
+        value = str(value)
+        for old, new in [(r'\[', '{'), (r'\]', '}'), (r'\n', ''),
+                         (' ?True', 'true'), ('False', 'false'), (' +', ', ')]:
+            # Python 2.7 puts an extra space before True when representing an
+            # array.
+            value = regexp.sub(old, new, value)
+        return value
+    else:
+        return str(value)
+
+
+def next_nonblank(f):
+    """Advance to the next non-blank line of file *f* and return that line minus
+    any whitespace on the right.
+
+    This raises :class:`StopIteration` if all of the remaining lines are blank.
+    """
+    line = f.next().rstrip()
+    while not line:
+        line = f.next().rstrip()
+    return line
+
+
 def plot(y, x=None, ax=None, label=None,
          color=['b', 'g', 'r', 'c', 'm', 'y', 'k'],
          marker=None,
-         dashes=[(None,None), (3,3), (1,1), (3,2,1,2)],
+         dashes=[(None, None), (3, 3), (1, 1), (3, 2, 1, 2)],
          **kwargs):
-    """Plot 1D scalar data as points and/or line segments in 2D Cartesian
+    r"""Plot 1D scalar data as points and/or line segments in 2D Cartesian
     coordinates.
 
-    This is similar to :meth:`matplotlib.pyplot.plot` (and actually calls that
-    method), but provides direct support for plotting an arbitrary number of
+    This is similar to :func:`matplotlib.pyplot.plot` (and actually calls that
+    function) but provides direct support for plotting an arbitrary number of
     curves.
 
-    **Arguments:**
+    **Parameters:**
 
-    - *y*: y-axis data
-
-         This may contain multiple series.
+    - *y*: List of y-axis series
 
     - *x*: x-axis data
 
-         If *x* is not provided, the y-axis data will be plotted versus its
+         If *x* is not provided, the y-axis series will be plotted versus its
          indices.  If *x* is a single series, it will be used for all of the
          y-axis series.  If it is a list of series, each x-axis series will be
          matched to a y-axis series.
 
     - *ax*: Axis onto which the data should be plotted.
 
-         If *ax* is *None* (default), axes are created.
+         If *ax* is 'None' (default), axes are created.
 
     - *label*: List of labels of each series (to be used later for the legend
       if applied)
 
-    - *color*: Single entry, list, or :class:`itertools.cycle` of colors that
+         If *label* is 'None', no labels are applied.
+
+    - *color*: Single entry, list, or :func:`itertools.cycle` of colors that
       will be used sequentially
 
          Each entry may be a character, grayscale, or rgb value.
 
          .. Seealso:: http://matplotlib.sourceforge.net/api/colors_api.html
 
-    - *marker*: Single entry, list, or :class:`itertools.cycle` of markers that
+    - *marker*: Single entry, list, or :func:`itertools.cycle` of markers that
       will be used sequentially
 
-         Use *None* for no marker.  A good assortment is ["o", "v", "^", "<",
-         ">", "s", "p", "*", "h", "H", "D", "d"]. All of the possible entries
+         Use 'None' for no marker.  A good assortment is ['o', 'v', '^', '<',
+         '>', 's', 'p', '*', 'h', 'H', 'D', 'd']. All of the possible entries
          are listed at:
          http://matplotlib.sourceforge.net/api/artist_api.html#matplotlib.lines.Line2D.set_marker.
 
-    - *dashes*: Single entry, list, or :class:`itertools.cycle` of dash styles
+    - *dashes*: Single entry, list, or :func:`itertools.cycle` of dash styles
       that will be used sequentially
 
          Each style is a tuple of on/off lengths representing dashes.  Use
-         (0, 1) for no line and (None, None) for a solid line.
+         (0, 1) for no line and ('None', 'None') for a solid line.
 
-         .. Seealso:: http://matplotlib.sourceforge.net/api/collections_api.html
+         .. Seealso:: http://matplotlib.org/api/lines_api.html#matplotlib.lines.Line2D.set_dashes
 
-    - *\*\*kwargs*: Additional arguments for :meth:`matplotlib.pyplot.plot`
+    - *\*\*kwargs*: Additional arguments for :func:`matplotlib.pyplot.plot`
 
     **Returns:** List of :class:`matplotlib.lines.Line2D` objects
 
     **Example:**
 
-    .. plot:: examples/util-plot.py
-       :alt: example of plot()
+    >>> plot([range(11), range(10, -1, -1)]) # doctest: +ELLIPSIS
+    [[<matplotlib.lines.Line2D object at 0x...>], [<matplotlib.lines.Line2D object at 0x...>]]
     """
     # Create axes if necessary.
     if not ax:
@@ -801,11 +916,10 @@ def plot(y, x=None, ax=None, label=None,
 
 
 def quiver(ax, u, v, x=None, y=None, pad=0.05, pivot='middle', **kwargs):
-    """Plot 2D vector data as arrows in 2D Cartesian coordinates.
+    r"""Plot 2D vector data as arrows in 2D Cartesian coordinates using a
+    uniform grid.
 
-    Uses a uniform grid.
-
-    **Arguments:**
+    **Parameters:**
 
     - *ax*: Axis onto which the data should be plotted
 
@@ -816,9 +930,9 @@ def quiver(ax, u, v, x=None, y=None, pad=0.05, pivot='middle', **kwargs):
     - *pad*: Amount of white space around the data (relative to the span of the
       field)
 
-    - *pivot*: "tail" | "middle" | "tip" (see :meth:`matplotlib.pyplot.quiver`)
+    - *pivot*: 'tail' | 'middle' | 'tip' (see :func:`matplotlib.pyplot.quiver`)
 
-    - *\*\*kwargs*: Additional arguments for :meth:`matplotlib.pyplot.quiver`
+    - *\*\*kwargs*: Additional arguments for :func:`matplotlib.pyplot.quiver`
 
     **Example:**
 
@@ -831,9 +945,61 @@ def quiver(ax, u, v, x=None, y=None, pad=0.05, pivot='middle', **kwargs):
         p = ax.quiver(x, y, u, v, pivot=pivot, **kwargs)
     plt.axis('tight')
     l, r, b, t = plt.axis()
-    dx, dy = r-l, t-b
-    plt.axis([l-pad*dx, r+pad*dx, b-pad*dy, t+pad*dy])
+    dx, dy = r - l, t - b
+    plt.axis([l - pad * dx, r + pad * dx, b - pad * dy, t + pad * dy])
     return p
+
+
+def read_values(names, fname, patterns):
+    """Read integers or floats from a formatted text file.
+
+    **Parameters:**
+
+    - *names*: Variable name or list of names
+
+    - *fname*: Name of the file (may include the file path)
+
+    - *patterns*: List of possible multi-line regular expressions for a variable
+      specification
+
+         Each expression must contain '%s' for the variable name and parentheses
+         around the value.  The expressions are tried in order until there is a
+         match.
+    """
+    # Read the file.
+    with open(fname, 'r') as src:
+        text = src.read()
+
+    # Extract the values.
+    def _read_value(name):
+        """Read a single value.
+        """
+        namere = regexp.escape(name)  # Escape the dots, square brackets, etc.
+        for pattern in patterns:
+            try:
+                match = regexp.search(pattern % namere, text,
+                                      regexp.MULTILINE).group(1)
+            except AttributeError:
+                continue  # Try the next pattern.
+            try:
+                return int(match)
+            except ValueError:
+                try:
+                    return float(match)
+                except ValueError:
+                    raise ValueError(
+                        'The value of %s ("%s") could not be represented as a '
+                        'float or an int.' % (name, match))
+        else:
+            # pylint: disable=I0011, W0120
+            raise KeyError(
+                "Variable %s doesn't exist or isn't formatted as expected in "
+                "%s." % (name, fname))
+
+    if isinstance(names, string_types):
+        return _read_value(names)
+    else:
+        return map(_read_value, names)
 
 
 def save(formats=['pdf', 'png'], fname=None, fig=None):
@@ -842,26 +1008,26 @@ def save(formats=['pdf', 'png'], fname=None, fig=None):
     The base filename (with directory if necessary but without extension) is
     determined in this order of priority:
 
-    1. *fname* argument if it is not *None*
+    1. *fname* argument if it is not 'None'
     2. the *label* property of the figure, if it is not empty
     3. the response from a file dialog
 
-    A forward slash ("/") can be used as a path separator, even if the operating
+    A forward slash (;/') can be used as a path separator, even if the operating
     system is Windows.  Folders are created as needed.
 
-    **Arguments:**
+    **Parameters:**
 
     - *formats*: Format or list of formats in which the figure should be saved
 
     - *fname*: Filename (see above)
 
-    - *fig*: `matplotlib <http://matplotlib.org/api/figure_api.html>`_ figure
+    - *fig*: `matplotlib figure <http://matplotlib.org/api/figure_api.html>`_
       or list of figures to be saved
 
-           If *fig* is *None* (default), then the current figure will be saved.
+           If *fig* is 'None' (default), then the current figure will be saved.
 
-    .. Note::  In general, :meth:`save` should be called before
-       :meth:`matplotlib.pyplot.show` so that the figure(s) are still present in
+    .. Note::  In general, :func:`save` should be called before
+       :func:`matplotlib.pyplot.show` so that the figure(s) are still present in
        memory.
 
     **Example:**
@@ -869,17 +1035,22 @@ def save(formats=['pdf', 'png'], fname=None, fig=None):
     .. code-block:: python
 
        >>> import matplotlib.pyplot as plt
-       >>> from modelicares import *
 
        >>> figure('examples/temp') # doctest: +ELLIPSIS
        <matplotlib.figure.Figure object at 0x...>
-       >>> plt.plot(range(10)) # doctest: +SKIP
+       >>> plt.plot(range(10)) # doctest: +ELLIPSIS
        [<matplotlib.lines.Line2D object at 0x...>]
-       >>> save() # doctest: +SKIP
+       >>> save()
        Saved examples/temp.pdf
        Saved examples/temp.png
 
-    .. Note::  The :meth:`figure` method can be used to directly create a
+    .. testcleanup::
+
+       >>> os.remove("examples/temp.pdf")
+       >>> os.remove("examples/temp.png")
+       >>> plt.close()
+
+    .. Note::  The :func:`figure` function can be used to directly create a
        figure with a label.
     """
     # Get the figures.
@@ -890,10 +1061,14 @@ def save(formats=['pdf', 'png'], fname=None, fig=None):
     if not fname:
         fname = fig.get_label()
         if not fname:
-            fname, __ = QFileDialog.getSaveFileName(None,
-                                                    "Choose a base filename.")
-            if not fname:
+            fname = getSaveFileName(None, "Choose a base filename.")
+            if fname == '':
                 print("Cancelled.")
+                return
+            elif fname is None:
+                print("The figure was not saved.  Specify the filename via the "
+                      "fname argument or the figure's label attribute, or "
+                      "install PyQt4, guidata, or PySide to use a file dialog.")
                 return
 
     # Create folders if necessary.
@@ -902,7 +1077,7 @@ def save(formats=['pdf', 'png'], fname=None, fig=None):
         os.makedirs(directory)
 
     # Save in the desired formats.
-    for fmt in list(formats):
+    for fmt in flatten_list(formats):
         full_name = fname + '.' + fmt
         fig.savefig(full_name)
         print("Saved " + full_name)
@@ -912,16 +1087,17 @@ def saveall(formats=['pdf', 'png']):
     """Save all open figures as images in a format or list of formats.
 
     The directory and base filenames (without extension) are taken from the
-    *label* property of the present figures.  If a figure has an empty *label*,
+    *label* property of the open figures.  If a figure has an empty *label*,
     then a file dialog is opened to choose the filename.  Note that the
-    :meth:`figure` method can be used to directly create a figure with a label.
+    :func:`figure` function can be used to directly create a figure with a
+    label.
 
-    **Arguments:**
+    **Parameters:**
 
     - *formats*: Format or list of formats in which the figures should be saved
 
-    .. Note::  In general, :meth:`saveall` should be called before
-       :meth:`matplotlib.pyplot.show` so that the figure(s) are still present
+    .. Note::  In general, :func:`saveall` should be called before
+       :func:`matplotlib.pyplot.show` so that the figure(s) are still present
        in memory.
 
     **Example:**
@@ -929,15 +1105,20 @@ def saveall(formats=['pdf', 'png']):
     .. code-block:: python
 
        >>> import matplotlib.pyplot as plt
-       >>> from modelicares import *
 
        >>> figure('examples/temp') # doctest: +ELLIPSIS
        <matplotlib.figure.Figure object at 0x...>
-       >>> plt.plot(range(10))  # doctest: +SKIP
+       >>> plt.plot(range(10)) # doctest: +ELLIPSIS
        [<matplotlib.lines.Line2D object at 0x...>]
-       >>> save() # doctest: +SKIP
+       >>> saveall() # doctest: +SKIP
        Saved examples/temp.pdf
        Saved examples/temp.png
+
+    .. testcleanup::
+
+       >>> os.remove("examples/temp.pdf") # doctest: +SKIP
+       >>> os.remove("examples/temp.png") # doctest: +SKIP
+       >>> plt.close()
     """
 
     # Get the figures.
@@ -953,24 +1134,20 @@ def setup_subplots(n_plots, n_rows, title="", subtitles=None,
                    xlabel="", xticklabels=None, xticks=None,
                    ylabel="", yticklabels=None, yticks=None,
                    ctype=None, clabel="",
-                   margin_left=rcParams['figure.subplot.left'],
-                   margin_right=1-rcParams['figure.subplot.right'],
-                   margin_bottom=rcParams['figure.subplot.bottom'],
-                   margin_top=1-rcParams['figure.subplot.top'],
-                   margin_cbar=0.2,
-                   wspace=0.1, hspace=0.25,
+                   left=0.05, right=0.05, bottom=0.05, top=0.1,
+                   hspace=0.1, vspace=0.25, cbar=0.2,
                    cbar_space=0.1, cbar_width=0.05):
     """Create an array of subplots and return their axes.
 
-    **Arguments:**
+    **Parameters:**
 
-    - *n_plots*: Number of (sub)plots
+    - *n_plots*: Number of subplots
 
-    - *n_rows*: Number of rows of (sub)plots
+    - *n_rows*: Number of rows of subplots
 
     - *title*: Title for the figure
 
-    - *subtitles*: List of subtitles (i.e., titles for each subplot) or *None*
+    - *subtitles*: List of subtitles (i.e., titles for each subplot) or 'None'
       for no subtitles
 
     - *label*: Label for the figure
@@ -983,11 +1160,11 @@ def setup_subplots(n_plots, n_rows, title="", subtitles=None,
     - *xticklabels*: Labels for the x-axis ticks (only shown for the subplots
       on the bottom row)
 
-         If *None*, then the default is used.
+         If 'None', then the default is used.
 
     - *xticks*: Positions of the x-axis ticks
 
-         If *None*, then the default is used.
+         If 'None', then the default is used.
 
     - *ylabel*: Label for the y-axis (only shown for the subplots on the left
       column)
@@ -995,47 +1172,45 @@ def setup_subplots(n_plots, n_rows, title="", subtitles=None,
     - *yticklabels*: Labels for the y-axis ticks (only shown for the subplots
       on the left column)
 
-         If *None*, then the default is used.
+         If 'None', then the default is used.
 
     - *yticks*: Positions of the y-axis ticks
 
-         If *None*, then the default is used.
+         If 'None', then the default is used.
 
-    - *ctype*: Type of colorbar (*None*, 'vertical', or 'horizontal')
+    - *ctype*: Type of colorbar ('None', 'vertical', or 'horizontal')
 
     - *clabel*: Label for the color- or c-bar axis
 
-    - *margin_left*: Left margin
+    - *left*: Left margin
 
-    - *margin_right*: Right margin (ignored if
-      ``cbar_orientation == 'vertical'``)
+    - *right*: Right margin (ignored if *cbar_orientation* is 'vertical')
 
-    - *margin_bottom*: Bottom margin (ignored if
-      ``cbar_orientation == 'horizontal'``)
+    - *bottom*: Bottom margin (ignored if *cbar_orientation* is 'horizontal')
 
-    - *margin_top*: Top margin
+    - *top*: Top margin
 
-    - *margin_cbar*: Margin reserved for the colorbar (right margin if
-      ``cbar_orientation == 'vertical'`` and bottom margin if
-      ``cbar_orientation == 'horizontal'``)
+    - *cbar*: Margin reserved for the colorbar (right margin if
+      *cbar_orientation* is 'vertical' and bottom margin if *cbar_orientation*
+      is 'horizontal')
 
-    - *wspace*: The amount of width reserved for blank space between subplots
+    - *hspace*: Horizontal space between columns of subplots
 
-    - *hspace*: The amount of height reserved for white space between subplots
+    - *vspace*: Vertical space between rows of subplots
 
     - *cbar_space*: Space between the subplot rectangles and the colorbar
 
-         If *cbar* is *None*, then this is ignored.
+         If *cbar* is 'None', then this is ignored.
 
     - *cbar_width*: Width of the colorbar if vertical (or height if horizontal)
 
-         If *cbar* is *None*, then this is ignored.
+         If *cbar* is 'None', then this is ignored.
 
     **Returns:**
 
     1. List of subplot axes
 
-    2. Colorbar axis (returned iff ``cbar != None``)
+    2. Colorbar axis (returned iff *cbar* is not 'None')
 
     3. Number of columns of subplots
 
@@ -1050,10 +1225,12 @@ def setup_subplots(n_plots, n_rows, title="", subtitles=None,
         "cytpe must be 'vertical', 'horizontal', or None."
 
     # Create the figure.
-    subplotpars = SubplotParams(left=margin_left, top=1-margin_top,
-        right=1-(margin_cbar if ctype == 'vertical' else margin_right),
-        bottom=(margin_cbar if ctype == 'horizontal' else margin_bottom),
-        wspace=wspace, hspace=hspace)
+    subplotpars = SubplotParams(left=left, top=1 - top,
+                                right=1 - (cbar if ctype == 'vertical'
+                                           else right),
+                                bottom=(cbar if ctype == 'horizontal'
+                                        else bottom),
+                                wspace=hspace, hspace=vspace)
     fig = figure(label, subplotpars=subplotpars)
     fig.suptitle(t=title, fontsize=rcParams['axes.titlesize'])
     # For some reason, the suptitle() function doesn't automatically follow the
@@ -1061,13 +1238,13 @@ def setup_subplots(n_plots, n_rows, title="", subtitles=None,
 
     # Add the subplots.
     # Provide at least as many panels as needed.
-    n_cols = int(np.ceil(float(n_plots)/n_rows))
+    n_cols = int(np.ceil(float(n_plots) / n_rows))
     ax = []
     for i in range(n_plots):
         # Create the axes.
         i_col = np.mod(i, n_cols)
-        i_row = (i - i_col)/n_cols
-        a = fig.add_subplot(n_rows, n_cols, i+1)
+        # i_row = (i - i_col)/n_cols
+        a = fig.add_subplot(n_rows, n_cols, i + 1)
         ax.append(a)
 
         # Scale and label the axes.
@@ -1076,7 +1253,7 @@ def setup_subplots(n_plots, n_rows, title="", subtitles=None,
         if yticks is not None:
             a.set_yticks(yticks)
         # Only show the xlabel and xticklabels for the bottom row.
-        if True:#i_row == n_rows - 1:
+        if True:  # i_row == n_rows - 1:
             a.set_xlabel(xlabel)
             if xticklabels is not None:
                 a.set_xticklabels(xticklabels)
@@ -1097,36 +1274,35 @@ def setup_subplots(n_plots, n_rows, title="", subtitles=None,
     # Add the colorbar.
     if ctype:
         if ctype == 'vertical':
-            #fig.subplots_adjust(left=margin_left, bottom=margin_top,
-            #    right=1-margin_cbar, top=1-margin_top,
-            #    wspace=wspace, hspace=hspace)
-            cax = fig.add_axes([1 - margin_cbar + cbar_space, margin_bottom,
-                                cbar_width, 1 - margin_bottom - margin_top])
-            #cax.set_ylabel(clabel)
+            # fig.subplots_adjust(left=left, bottom=top, right=1-cbar,
+            #                     top=1-top, hspace=hspace, vspace=vspace)
+            cax = fig.add_axes([1 - cbar + cbar_space, bottom,
+                                cbar_width, 1 - bottom - top])
+            # cax.set_ylabel(clabel)
         else:
-            #fig.subplots_adjust(left=margin_left, bottom=margin_cbar,
-            #    right=1-margin_left, top=1-margin_top,
-            #    wspace=wspace, hspace=hspace)
-            cax = fig.add_axes([margin_left,
-                                margin_cbar - cbar_space - cbar_width,
-                                1 - margin_left - margin_right, cbar_width])
-            #cax.set_xlabel(clabel)
+            # fig.subplots_adjust(left=left, bottom=cbar, right=1-left,
+            #                     top=1-top, hspace=hspace, vspace=vspace)
+            cax = fig.add_axes([left,
+                                cbar - cbar_space - cbar_width,
+                                1 - left - right, cbar_width])
+            # cax.set_xlabel(clabel)
         cax.set_ylabel(clabel)
         return ax, cax, n_cols
     else:
         return ax, n_cols
 
-# TODO: Remove the "_" prefix and add it to the list once this is finished.
-def _shift_scale_c(cbar, v_min, v_max, eagerness=0.325):
-    """"Apply an offset and a factor as necessary to the colorbar.
+# TODO: Remove the "_" prefix and add this to the list above once it's finished.
 
-    **Arguments:**
+def _shift_scale_c(cbar, vmin, vmax, eagerness=0.325):
+    """"If helpful, apply an offset and a factor to the colorbar.
+
+    **Parameters:**
 
     - *cbar*: :class:`matplotlib.colorbar.Colorbar` object
 
-    - *v_min*: Minimum of the color-axis data
+    - *vmin*: Minimum of the color-axis data
 
-    - *v_max*: Maximum of the color-axis data
+    - *vmax*: Maximum of the color-axis data
 
     - *eagerness*: Parameter to adjust how little of an offset is allowed
       before the label will be recentered
@@ -1141,19 +1317,18 @@ def _shift_scale_c(cbar, v_min, v_max, eagerness=0.325):
     # accessed 2010/11/10
     label = cbar.ax.get_ylabel()
     ticks = cbar.ax.get_yticks()
-    offset, offset_factor, offset_pow1000, pow1000 = _gen_offset_factor(v_min,
-                                                                        v_max)
-    label, offset, pow1000 = _gen_offset_factor(label, v_min, v_max, eagerness)
-    cbar.set_ticklabels(["%.1f" % x for x in (ticks - offset)/1000**pow1000])
+    label, offset, pow1000 = _gen_offset_factor(label, vmin, vmax, eagerness)
+    cbar.set_ticklabels(
+        ["%.1f" % x for x in (ticks - offset) / 1000 ** pow1000])
     cbar.set_label(label)
 
 
 def shift_scale_x(ax, eagerness=0.325):
-    """Apply an offset and a factor as necessary to the x axis.
+    """If helpful, apply an offset and a factor to the x axis.
 
-    **Arguments:**
+    **Parameters:**
 
-    - *ax*: matplotlib.axes object
+    - *ax*: Axes (:class:`matplotlib.axes.Axes` object)
 
     - *eagerness*: Parameter to adjust how little of an offset is allowed
       before the label will be recentered
@@ -1174,16 +1349,17 @@ def shift_scale_x(ax, eagerness=0.325):
     ticks = ax.get_xticks()
     label, offset, pow1000 = _gen_offset_factor(label, ticks[0], ticks[-1],
                                                 eagerness)
-    ax.set_xticklabels(["%.1f" % x for x in (ticks - offset)/1000**pow1000])
+    ax.set_xticklabels(
+        ["%.1f" % x for x in (ticks - offset) / 1000 ** pow1000])
     ax.set_xlabel(label)
 
 
 def shift_scale_y(ax, eagerness=0.325):
-    """Apply an offset and a factor as necessary to the y axis.
+    """If helpful, apply an offset and a factor to the y axis.
 
-    **Arguments:**
+    **Parameters:**
 
-    - *ax*: matplotlib.axes object
+    - *ax*: Axes (:class:`matplotlib.axes.Axes` object)
 
     - *eagerness*: Parameter to adjust how little of an offset is allowed
       before the label will be recentered
@@ -1204,7 +1380,8 @@ def shift_scale_y(ax, eagerness=0.325):
     ticks = ax.get_yticks()
     label, offset, pow1000 = _gen_offset_factor(label, ticks[0], ticks[-1],
                                                 eagerness)
-    ax.set_yticklabels(["%.1f" % x for x in (ticks - offset)/1000**pow1000])
+    ax.set_yticklabels(
+        ["%.1f" % x for x in (ticks - offset) / 1000 ** pow1000])
     ax.set_ylabel(label)
 
 
@@ -1215,68 +1392,146 @@ def si_prefix(pow1000):
     # (http://www.bipm.org/en/si/si_brochure/; excluding hecto, deca, deci,
     # and centi).
     try:
-        return ['Y', # yotta (10^24)
-                'Z', # zetta (10^21)
-                'E', # exa (10^18)
-                'P', # peta (10^15)
-                'T', # tera (10^12)
-                'G', # giga (10^9)
-                'M', # mega (10^6)
-                'k', # kilo (10^3)
-                '', # (10^0)
-                'm', # milli (10^-3)
-                r'{\mu}', # micro (10^-6)
-                'n', # nano (10^-9)
-                'p', # pico (10^-12)
-                'f', # femto (10^-15)
-                'a', # atto (10^-18)
-                'z', # zepto (10^-21)
-                'y'][8 - pow1000] # yocto (10^-24)
+        return ['Y',  # yotta (10^24)
+                'Z',  # zetta (10^21)
+                'E',  # exa (10^18)
+                'P',  # peta (10^15)
+                'T',  # tera (10^12)
+                'G',  # giga (10^9)
+                'M',  # mega (10^6)
+                'k',  # kilo (10^3)
+                '',   # (10^0)
+                'm',  # milli (10^-3)
+                r'{\mu}',  # micro (10^-6)
+                'n',  # nano (10^-9)
+                'p',  # pico (10^-12)
+                'f',  # femto (10^-15)
+                'a',  # atto (10^-18)
+                'z',  # zepto (10^-21)
+                'y'][8 - pow1000]  # yocto (10^-24)
     except IndexError:
         raise IndexError("The factor 1e%i is beyond the range covered by "
-                         "the SI prefixes (1e-24 to 1e24)." % 3*pow1000)
+                         "the SI prefixes (1e-24 to 1e24)." % 3 * pow1000)
 
 
-def tree(strings, delimiter='.'):
-    """Return a tree of strings as a nested dictionary.
+def tree(keys, values, separator='.', container=dict):
+    """Return a nested dictionary generated from *keys* and *values*.
 
-    The levels of hierarchy in each string are marked with *delimiter*.
-    The keys in the dictionary are the sub-branch names.  The value at the
-    end of each branch is the full string.
+    **Parameters:**
 
-    **Arguments:**
+    - *keys*: List of keys
 
-    - *strings*: List of strings
+    - *values*: List of values corresponding to the keys
 
-    - *delimiter*: String that marks a level of hierarchy
+         These are used as the values of the innermost dictionary or
+         dictionaries.
+
+    - *separator*: String that marks a level of hierarchy within each key
+
+    - *container*: Dictionary-like class used for the results
+
+         To keep the order of the list for the tree, use
+         :class:`collections.OrderedDict`.  To print the tree as nested
+         tuple-based modifiers formatted for Modelica_, use :class:`ParamDict`.
 
     **Example:**
 
-       >>> from modelicares.util import tree
-       >>> tree(['a.b.c', 'd.e', 'd.f'])
-       {'a': {'b': {'c': 'a.b.c'}}, 'd': {'e': 'd.e', 'f': 'd.f'}}
+    >>> tree(['a.b.c', 'd.e', 'd.f'], [1, 2, 3]) # doctest: +SKIP
+    {'a': {'b': {'c': 1}}, 'd': {'e': 2, 'f': 3}}
 
+    .. testcleanup::
+
+       >>> tree(['a.b.c', 'd.e', 'd.f'], [1, 2, 3]) == {'a': {'b': {'c': 1}}, 'd': {'e': 2, 'f': 3}}
+       True
     """
-    # This method has been copied and modified from DyMat version 0.5
+    # This function has been copied and modified from DyMat version 0.5
     # (Joerg Raedler,
     # http://www.j-raedler.de/2011/09/dymat-reading-modelica-results-with-python/,
     # BSD License).
-    root = {}
-    for string in strings:
+    root = container()
+    for key, value in zip(keys, values):
         branch = root
-        elements = string.split(delimiter)
+        elements = key.split(separator)
         for element in elements[:-1]:
-            if not element in branch:
-                branch[element] = {}
+            if element not in branch:
+                branch[element] = container()
             branch = branch[element]
-        branch[elements[-1]] = string
+        branch[elements[-1]] = value
     return root
+
+
+def write_values(data, fname, patterns):
+    """Write values to a formatted text file.
+
+    **Parameters:**
+
+    - *data*: Dictionary of variable names and values
+
+         The string representation of each value will be used in the file,
+         except any item with a value of 'None' will be skipped.
+
+    - *fname*: Name of the file (may include the file path)
+
+    - *patterns*: List of possible multi-line regular expressions for a variable
+      specification
+
+         Each expression must contain '%s' for the variable name and two pairs
+         of parentheses: 1) around everything before the value and 2) around
+         everything after the value.  The expressions are tried in order until
+         there is a match.
+    """
+    # Read the file.
+    with open(fname, 'r') as src:
+        text = src.read()
+
+    # Set the values.
+    for name, value in data.items():
+        if value is not None:
+            namere = regexp.escape(name) # Escape the dots, square brackets, etc.
+            for pattern in patterns:
+                text, num = regexp.subn(pattern % namere, r'\g<1>%s\2' % value,
+                                        text, 1, regexp.MULTILINE)
+                if num: # Found a match
+                    break
+            else:
+                raise KeyError(
+                    "Variable %s does not exist or is not formatted as expected "
+                    "in %s." % (name, fname))
+
+    # Re-write the file.
+    with open(fname, 'w') as src:
+        src.write(text)
 
 
 # From http://old.nabble.com/Arrows-using-Line2D-and-shortening-lines-td19104579.html,
 # accessed 2010/11/2012
 class ArrowLine(Line2D):
-    """A matplotlib subclass to draw an arrowhead on a line
+
+    r"""A matplotlib_ subclass to draw an arrowhead on a line
+
+    **Parameters:**
+
+    - *arrow* (='-'): Type of arrow ('<' | '-' | '>')
+
+    - *arrowsize* (=2*4): Size of arrow
+
+    - *arrowedgecolor* (='b'): Color of arrow edge
+
+    - *arrowfacecolor* (='b'): Color of arrow face
+
+    - *arrowedgewidth* (=4): Width of arrow edge
+
+    - *arrowheadwidth* (=\ *arrowsize*): Width of arrow head
+
+    - *arrowheadlength* (=\ *arrowsize*): Length of arrow head
+
+    - *\*args*, *\*\*kwargs*: Additional arguments for
+      :class:`matplotlib.lines.Line2D`
+
+    **Example:**
+
+    .. plot:: examples/util-ArrowLine.py
+       :alt: example of ArrowLine()
     """
     __author__ = "Jason Grout"
     __copyright__ = "Copyright (C) 2008"
@@ -1285,39 +1540,19 @@ class ArrowLine(Line2D):
 
     from matplotlib.path import Path
 
-    arrows = {'>' : '_draw_triangle_arrow'}
+    # pylint: disable=E1101
+
+    arrows = {'>': '_draw_triangle_arrow'}
     _arrow_path = Path([[0.0, 0.0], [-1.0, 1.0], [-1.0, -1.0], [0.0, 0.0]],
-                       [Path.MOVETO, Path.LINETO,Path.LINETO, Path.CLOSEPOLY])
+                       [Path.MOVETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY])
 
     def __init__(self, *args, **kwargs):
         """Initialize the line and arrow.
 
-        **Arguments:**
-
-        - *arrow* (='-'): Type of arrow ('<' | '-' | '>')
-
-        - *arrowsize* (=2*4): Size of arrow
-
-        - *arrowedgecolor* (='b'): Color of arrow edge
-
-        - *arrowfacecolor* (='b'): Color of arrow face
-
-        - *arrowedgewidth* (=4): Width of arrow edge
-
-        - *arrowheadwidth* (=\ *arrowsize*): Width of arrow head
-
-        - *arrowheadlength* (=\ *arrowsize*): Length of arrow head
-
-        - *\*args*, *\*\*kwargs*: Additional arguments for
-          :class:`matplotlib.lines.Line2D`
-
-        **Example:**
-
-        .. plot:: examples/util-ArrowLine.py
-           :alt: example of ArrowLine()
+        See the top-level class documentation.
         """
         self._arrow = kwargs.pop('arrow', '-')
-        self._arrowsize = kwargs.pop('arrowsize', 2*4)
+        self._arrowsize = kwargs.pop('arrowsize', 2 * 4)
         self._arrowedgecolor = kwargs.pop('arrowedgecolor', 'b')
         self._arrowfacecolor = kwargs.pop('arrowfacecolor', 'b')
         self._arrowedgewidth = kwargs.pop('arrowedgewidth', 4)
@@ -1328,8 +1563,8 @@ class ArrowLine(Line2D):
     def draw(self, renderer):
         """Draw the line and arrowhead using the passed renderer.
         """
-        #if self._invalid:
-        #    self.recache()
+        # if self._invalid:
+        #     self.recache()
         renderer.open_group('arrowline2d')
         if not self._visible:
             return
@@ -1360,13 +1595,13 @@ class ArrowLine(Line2D):
         segment = [i[0] for i in path.iter_segments()][-2:]
         startx, starty = path_trans.transform_point(segment[0])
         endx, endy = path_trans.transform_point(segment[1])
-        angle = atan2(endy-starty, endx-startx)
-        halfwidth = 0.5*renderer.points_to_pixels(self._arrowheadwidth)
+        angle = atan2(endy - starty, endx - startx)
+        halfwidth = 0.5 * renderer.points_to_pixels(self._arrowheadwidth)
         length = renderer.points_to_pixels(self._arrowheadlength)
         transform = Affine2D().scale(length, halfwidth).rotate(angle)\
                                                        .translate(endx, endy)
-        rgbFace = self._get_rgb_arrowface()
-        renderer.draw_path(gc, self._arrow_path, transform, rgbFace)
+        rgb_face = self._get_rgb_arrowface()
+        renderer.draw_path(gc, self._arrow_path, transform, rgb_face)
 
     def _get_rgb_arrowface(self):
         """Get the color of the arrow face.
@@ -1376,13 +1611,276 @@ class ArrowLine(Line2D):
 
         facecolor = self._arrowfacecolor
         if is_string_like(facecolor) and facecolor.lower() == 'none':
-            rgbFace = None
+            rgb_face = None
         else:
-            rgbFace = colorConverter.to_rgb(facecolor)
-        return rgbFace
+            rgb_face = colorConverter.to_rgb(facecolor)
+        return rgb_face
+
+
+class CallDict(dict):
+
+    """Dictionary that when called returns a dictionary of the results from
+    calling its entries
+
+    Also, when an unknown attribute (property or method) is requested, this
+    class returns a callable dictionary containing that attribute of its values.
+
+    **Examples:**
+
+    Calling the dictionary:
+
+    >>> f = lambda x: lambda y: x*y
+    >>> d = CallDict(a=f(2), b=f(3))
+    >>> d(5) # doctest: +SKIP
+    {'a': 10, 'b': 15}
+
+    .. testcleanup::
+
+       >>> d(5) == {'a': 10, 'b': 15}
+       True
+
+    Calling a method of the values in the dictionary:
+
+    >>> d = CallDict({1: 'abc', 2: 'abcdef'})
+    >>> d.lstrip('a') # doctest: +SKIP
+    {1: 'bc', 2: 'bcdef'}
+
+    .. testcleanup::
+
+       >>> d.lstrip('a') == {1: 'bc', 2: 'bcdef'}
+       True
+
+    Retrieving a property of the values in the dictionary:
+
+    .. code-block:: python
+
+       >>> from numpy import array
+
+       >>> d = CallDict(a=array([0]), b=array([0, 0]))
+       >>> d.shape # doctest: +SKIP
+       {'a': (1,), 'b': (2,)}
+
+    .. testcleanup::
+
+       >>> d.shape == {'a': (1,), 'b': (2,)}
+       True
+    """
+
+    def __getattr__(self, attr):
+        """Return a callable dictionary containing the keys from this dictionary
+        and the requested attribute from its values.
+        """
+        return CallDict({key: getattr(value, attr)
+                         for key, value in self.items()})
+
+    def __call__(self, *args, **kwargs):
+        """Return a dictionary containing the keys of this dictionary and the
+        results from calling its values.
+        """
+        return {key: value(*args, **kwargs) for key, value in self.items()}
+
+
+class CallList(list):
+
+    """List that when called returns a list of the results from calling its
+    elements.
+
+    Also, when an unknown attribute (property or method) is requested, this
+    class returns a callable list containing that attribute of its elements.
+
+    **Examples:**
+
+    Calling the list:
+
+    >>> f = lambda x: lambda y: x*y
+    >>> l = CallList([f(2), f(3)])
+    >>> l(5)
+    [10, 15]
+
+    Calling a method of the elements in the list:
+
+    >>> l = CallList(['abc', 'abcdef'])
+    >>> l.lstrip('a')
+    ['bc', 'bcdef']
+
+    Retrieving a property of the elements in the list:
+
+    .. code-block:: python
+
+       >>> from numpy import array
+
+       >>> l = CallList([array([0]), array([0, 0])])
+       >>> l.shape
+       [(1,), (2,)]
+    """
+
+    def __getattr__(self, attr):
+        """Return a callable list containing the requested attribute from the
+        elements of this list.
+        """
+        return CallList([getattr(item, attr) for item in self])
+
+    def __call__(self, *args, **kwargs):
+        """Return a list of the results from calling the elements of this list.
+        """
+        return [item(*args, **kwargs) for item in self]
+
+
+class ParamDict(dict):
+
+    """Dictionary that prints its items as nested tuple-based modifiers,
+    formatted for Modelica_
+
+    Otherwise, this class is the same as :class:`dict`.  The underlying
+    structure is not nested or reformatted---only the string mapping
+    (:meth:`__str__`).
+
+    In the string mapping, each key is interpreted as a parameter name
+    (including the full model path in Modelica_ dot notation) and each entry is
+    a parameter value.  The value may be a number (:class:`int` or
+    :class:`float`), Boolean constant (in Python_ format---`True` or *False*,
+    not 'true' or 'false'), string, or NumPy_ arrays of these.  Modelica_
+    strings must be given with double quotes included (e.g., '"hello"').
+    Enumerations may be used as values (e.g., 'Axis.x').  Values may be
+    functions or modified classes, but the entire value must be expressed as a
+    Python_ string (e.g., 'fill(true, 2, 2)').  Items with a value of 'None' are
+    not shown.
+
+    Redeclarations and other prefixes must be included in the key along with the
+    name of the instance (e.g., 'redeclare Region regions[n_x, n_y, n_z]').  The
+    single quotes must be explicitly included for instance names that contain
+    symbols (e.g., "'H+'").
+
+    Note that Python_ dictionaries do not preserve order.  The keys are printed
+    in alphabetical order.
+
+    **Examples:**
+
+    .. code-block:: python
+
+       >>> import numpy as np
+
+       >>> d = ParamDict({'a': 1, 'b.c': np.array([2, 3]), 'b.d': False,
+       ...                'b.e': '"hello"', 'b.f': None})
+       >>> print(d)
+       (a=1, b(c={2, 3}, d=false, e="hello"))
+
+    The internal structure and formal representation (:meth:`__repr__`) is not
+    affected:
+
+    >>> d # doctest: +SKIP
+    {'a': 1, 'b.c': array([2, 3]), 'b.d': False, 'b.e': '"hello"', 'b.f': None}
+
+    An empty dictionary prints as an empty string (not "()"):
+
+    >>> print(ParamDict({}))
+    <BLANKLINE>
+
+
+    .. _NumPy: http://numpy.scipy.org/
+    """
+
+    def __str__(self):
+        """Map the :class:`ParamDict` instance to a string using tuple-based
+        modifiers formatted for Modelica_.
+        """
+        def _str(dictionary):
+            """Return a string representation of a dictionary in the form of
+            tuple-based modifiers (e.g., (a=1, b(c={2, 3}, d=false))).
+
+            Substitutions are made to properly represent Boolean variables and
+            arrays in Modelica_.
+            """
+            elements = []
+            for key, value in sorted(dictionary.items()):
+                if isinstance(value, ParamDict):
+                    elements.append('%s%s' % (key, value)) # Recursive
+                elif isinstance(value, dict):
+                    elements.append('%s%s' % (key, ParamDict(value))) # Ditto
+                elif value is not None:
+                    value = modelica_str(value)
+                    elements.append(key + '=' + value)
+            return '(%s)' % ', '.join(elements) if elements else ''
+
+        return _str(tree(self.keys(), self.values(), container=ParamDict))
+
+
+# Getch classes based on
+# http://code.activestate.com/recipes/134892-getch-like-unbuffered-character-reading-from-stdin/,
+# accessed 5/31/14
+
+class _Getch(object):
+
+    """Get a single character from the standard input.
+    """
+
+    def __init__(self):
+        try:
+            self.impl = _GetchWindows()
+        except ImportError:
+            self.impl = _GetchUnix()
+
+    def __call__(self):
+        return self.impl()
+
+
+class _GetchUnix(object):
+
+    """Get a single character from the standard input on Unix.
+    """
+
+    def __init__(self):
+        # pylint: disable=I0011, W0611, W0612
+        import tty
+
+    def __call__(self):
+        import tty
+        import termios
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+
+
+class _GetchWindows(object):
+
+    """Get a single character from the standard input on Windows.
+    """
+    # pylint: disable=I0011, W0611, W0612
+
+    def __init__(self):
+        import msvcrt
+
+    def __call__(self):
+        import msvcrt
+        return msvcrt.getch()
 
 
 if __name__ == "__main__":
-    """Test the contents of this file."""
+    # Test the contents of this file.
+
     import doctest
-    doctest.testmod()
+
+    if os.path.isdir('examples'):
+        doctest.testmod()
+    else:
+        # Create a link to the examples folder.
+        EXAMPLE_DIR = '../examples'
+        if not os.path.isdir(EXAMPLE_DIR):
+            raise IOError("Could not find the examples folder.")
+        try:
+            os.symlink(EXAMPLE_DIR, 'examples')
+        except AttributeError:
+            raise AttributeError("This method of testing isn't supported in "
+                                 "Windows.  Use runtests.py in the base "
+                                 "folder.")
+
+        # Test the docstrings in this file.
+        doctest.testmod()
+
+        # Remove the link.
+        os.remove('examples')

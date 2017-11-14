@@ -1,8 +1,10 @@
 #!/usr/bin/python
+"""Example of LinRes.bode()
+"""
 
-import numpy as np
+# pylint: disable=I0011, C0103
+
 from modelicares import LinRes
 
 lin = LinRes('PID.mat')
-lin.bode(omega=2*np.pi*np.logspace(-2, 3),
-         title="Bode plot of Modelica.Blocks.Continuous.PID")
+lin.bode(title="Bode plot of Modelica.Blocks.Continuous.PID")
